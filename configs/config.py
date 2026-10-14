@@ -75,7 +75,7 @@ class ModelConfig:
 
 @dataclass
 class HubConfig:
-    repo_id: str = f"{HF_USERNAME}/machine-lingual-nllb-200_distilled-peft"
+    repo_id: str = f"{HF_USERNAME}/nllb-200-distilled-lora-merged"
     private: bool = False
 
 
@@ -88,6 +88,32 @@ class LoraTrainingConfig(LoraConfig):
     lora_target_modules: list =  ["q_proj", "k_proj", "v_proj", "out_proj", "fc1", "fc2"]
     task_type: TaskType = TaskType.SEQ_2_SEQ_LM
 
+
+@dataclass
+class HPOConfig():
+    n_trials: int = 10
+    max_steps_per_trial: int = 400
+    data_subset: str = "hpo_subset"
+    storage: str = f"sqlite:///{PROJECT_ROOT}/optuna/optuna.db"
+    sampler: str = "tpe"
+    pruner: str = "median"
+
+
+@dataclass
+class EvalConfig:
+    seed: int = 42
+    baseline: str = "facebook/nllb-200-distilled-600M"
+    finetuned: str = f"{HF_USERNAME}/nllb-200-distilled-lora-merged"
+    extra: str = "fackbook/nllb-200-1.3B"
+    test_dataset: str = "flores-200"
+    split: str = "devtest"
+    directions: List[str] = ["en-fr", "en-ar", "en-sw", "fr-en", "ar-en", "sw-en"]
+    chrf_plus_plus = {"enabled": True, "word_order": 2}
+    comet = {"enabled": False}
+    report_per_direction_language: bool = True
+    correlations: List['str'] = ["spearman_judge_vs_chrf"]
+    report_output_dir: str = f"{PROJECT_ROOT}/reports"
+
 @dataclass
 class Config:
     data: DataConfig = DataConfig()
@@ -96,6 +122,7 @@ class Config:
     hub: HubConfig = HubConfig()
     lora: LoraTrainingConfig = LoraTrainingConfig()
     generation: GenerationConfig = GenerationConfig()
+    hpo: HPOConfig = HPOConfig()
 
 
 config: Config = Config()
