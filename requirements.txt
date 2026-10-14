@@ -1,0 +1,17 @@
+torch
+transformers
+sentencepiece
+datasets
+fasttext
+langdetect
+peft
+accelerate
+optuna
+wandb
+sacrebleu
+unbabel-comet
+pyyaml
+gradio
+ctranslate2
+huggingface-hub
+setuptools<81
