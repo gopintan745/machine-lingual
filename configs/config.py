@@ -82,7 +82,7 @@ class HubConfig:
 @dataclass
 class LoraTrainingConfig(LoraConfig):
     enabled: bool = True
-    r: int = 8
+    r: int = 16 # HPO: [8, 16, 32]
     lora_alpha: int = 32
     lora_dropout: float = 0.05
     lora_target_modules: list =  ["q_proj", "k_proj", "v_proj", "out_proj", "fc1", "fc2"]
