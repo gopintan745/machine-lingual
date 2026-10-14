@@ -10,7 +10,6 @@ dotenv.load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
 
 HF_USERNAME = os.getenv("HF_USERNAME")
 
-
 @dataclass
 class DataConfig:
     seed: int = 42
@@ -45,21 +44,33 @@ class DataConfig:
 class TrainingConfig:
     output_dir: str = str(PROJECT_ROOT / "checkpoints")
     num_train_epochs: int = 2
-    per_device_train_batch_size: int = 16
-    per_device_eval_batch_size: int = 32
-    learning_rate: float = 2e-5
+    per_device_batch_size: int = 16
+    grad_acum_steps: int = 2
+    learning_rate: float = 2e-5 #HPO : [1e-3, 5e-5]
     weight_decay: float = 0.01
     warmup_steps: int = 500
+    warmup_ratio: float = 0.05 
     logging_steps: int = 100
-    save_strategy: str = "epoch"
-    eval_strategy: str = "epoch"
+    #save_strategy: str = "epoch"
+    eval_strategy: str = "steps"
     fp16: bool = True  # Use mixed precision on GPU
+    gradient_checkpointing: bool = True  # Enable gradient checkpointing to save memory
+    best_metric: str = "chrf"
+    save_total_limit: int = 2
+
+
+@dataclass
+class GenerationConfig:
+    num_beam: int = 4
+    max_new_tokens: 128
 
 
 @dataclass 
 class ModelConfig:
-    model: str = "facebook/nllb-200-distilled-600M"
+    base: str = "facebook/nllb-200-distilled-600M"
     cached_dir: str = str(PROJECT_ROOT / "models")
+    dtype: str = "fp32"
+    max_length: int = 128
 
 
 @dataclass
@@ -70,10 +81,11 @@ class HubConfig:
 
 @dataclass
 class LoraTrainingConfig(LoraConfig):
+    enabled: bool = True
     r: int = 8
     lora_alpha: int = 32
-    lora_dropout: float = 0.1
-    lora_target_modules: list = ["q_proj", "v_proj"]
+    lora_dropout: float = 0.05
+    lora_target_modules: list =  ["q_proj", "k_proj", "v_proj", "out_proj", "fc1", "fc2"]
     task_type: TaskType = TaskType.SEQ_2_SEQ_LM
 
 @dataclass
@@ -83,3 +95,7 @@ class Config:
     model: ModelConfig = ModelConfig()
     hub: HubConfig = HubConfig()
     lora: LoraTrainingConfig = LoraTrainingConfig()
+    generation: GenerationConfig = GenerationConfig()
+
+
+config: Config = Config()
