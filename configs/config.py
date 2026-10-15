@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List
+from typing import Dict, List, Any
 import dotenv
 from pathlib import Path
 from dataclasses import dataclass
@@ -13,18 +13,18 @@ HF_USERNAME = os.getenv("HF_USERNAME")
 @dataclass
 class DataConfig:
     seed: int = 42
-    languages: Dict[str, str] = {
-        "en": "eng_Latn",
-        "fr": "fra_Latn",
-        "ar": "arb_Arab",
-        "sw": "swh_Latn",
+    languages: Dict[str, Dict[str, Any]] = {
+        "en": {"nllb": "eng_Latn", "fasttext": "en", "name": "English", "rtl": False},
+        "fr": {"nllb": "fra_Latn", "fasttext": "fr", "name": "French",  "rtl": False},
+        "ar": {"nllb": "arb_Arab", "fasttext": "ar", "name": "Arabic",  "rtl": True},
+        "sw": {"nllb": "swh_Latn", "fasttext": "sw", "name": "Swahili", "rtl": False}
     }
     directions: List[str] = ["en-fr", "en-ar", "en-sw"]
-    sources: List[Dict[str, str]] = [
-        {"name": "opus-100", "directions": ["en-fr", "en-ar", "en-sw"]},
-        {"name": "news-commentary", "directions": ["en-fr", "en-ar"]},
-        {"name": "mafand-mt", "directions": ["en-sw", "fr-sw"]},
-        {"name": "tatoeba", "directions": ["en-fr", "en-ar", "en-sw"]},
+    sources: List[Dict[str, Any]] = [
+        {"name": "opus-100", "source": "Helsinki-NLP/opus-100", "directions": ["en-fr", "en-sw", "fr-en", "ar-en", "sw-en"]},
+        {"name": "news-commentary", "source": "Helsinki-NLP/news_commentary", "directions": ["en-fr", "ar-en"]},
+        {"name": "mafand", "source": "masakhane/mafand", "directions": ["en-sw", "fr-sw"]},
+        {"name": "tatoeba", "source": "Helsinki-NLP/tatoeba", "directions": ["en-fr", "ar-en", "en-sw"]},
     ]
     train_per_direction: int = 20000
     hpo_subset: int = 5000
@@ -123,6 +123,7 @@ class Config:
     lora: LoraTrainingConfig = LoraTrainingConfig()
     generation: GenerationConfig = GenerationConfig()
     hpo: HPOConfig = HPOConfig()
+    val: EvalConfig = EvalConfig()
 
 
 config: Config = Config()

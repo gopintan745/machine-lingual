@@ -1,7 +1,7 @@
 from transformers import Trainer, TrainingArguments, DataCollatorForSeq2Seq
-from configs.config import config
+from configs.config import Config
 
-def build_trainer(model, train_dataset, eval_dataset, tokenizer):
+def build_trainer(model, train_dataset, eval_dataset, tokenizer, config: Config):
     training_args = TrainingArguments(
         output_dir=config.training.output_dir,
         num_train_epochs=config.training.num_train_epochs,
