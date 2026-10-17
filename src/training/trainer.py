@@ -1,8 +1,15 @@
-from transformers import Trainer, TrainingArguments, DataCollatorForSeq2Seq
+from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments, DataCollatorForSeq2Seq
 from configs.config import Config
+from eval.metrics import compute_chrf_corpus_score
 
 def build_trainer(model, train_dataset, eval_dataset, tokenizer, config: Config):
-    training_args = TrainingArguments(
+    training_args = Seq2SeqTrainingArguments(
+        predict_with_generate=False,
+        metric_for_best_model="eval_loss",
+        load_best_model_at_end=True,
+        label_names=["labels"], 
+        generation_max_length=config.generation.max_length,
+        generation_num_beams=config.generation.num_beams,
         output_dir=config.training.output_dir,
         num_train_epochs=config.training.num_train_epochs,
         per_device_train_batch_size=config.training.per_device_batch_size,
@@ -20,13 +27,13 @@ def build_trainer(model, train_dataset, eval_dataset, tokenizer, config: Config)
 
     data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
 
-    trainer = Trainer(
+    trainer = Seq2SeqTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         tokenizer=tokenizer,
-        data_collator=data_collator
+        data_collator=data_collator,
     )
 
     return trainer

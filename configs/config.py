@@ -62,7 +62,7 @@ class TrainingConfig:
 
 @dataclass
 class GenerationConfig:
-    num_beam: int = 4
+    num_beam: int = 1
     max_new_tokens: 128
 
 
