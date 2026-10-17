@@ -21,10 +21,11 @@ class DataConfig:
     }
     directions: List[str] = ["en-fr", "en-ar", "en-sw"]
     sources: List[Dict[str, Any]] = [
-        {"name": "opus-100", "source": "Helsinki-NLP/opus-100", "directions": ["en-fr", "en-sw", "fr-en", "ar-en", "sw-en"]},
-        {"name": "news-commentary", "source": "Helsinki-NLP/news_commentary", "directions": ["en-fr", "ar-en"]},
-        {"name": "mafand", "source": "masakhane/mafand", "directions": ["en-sw", "fr-sw"]},
-        {"name": "tatoeba", "source": "Helsinki-NLP/tatoeba", "directions": ["en-fr", "ar-en", "en-sw"]},
+        {"name": "opus-100", "source": "Helsinki-NLP/opus-100", "directions": ["en-fr", "fr-en", "ar-en"], "column_codes": {"en": "en", "fr": "fr", "ar": "ar"}},
+        {"name": "flores-200", "source": "facebook/flores", "directions": ["en-fr", "en-ar", "en-sw"], "column_codes": {"en": "en", "fr": "fr", "ar": "ar", "sw": "sw"}},
+        {"name": "news-commentary", "source": "Helsinki-NLP/news_commentary", "directions": ["en-fr", "ar-en"], "column_codes": {"en": "en", "fr": "fr", "ar": "ar"}},
+        {"name": "mafand", "source": "masakhane/mafand", "directions": ["en-sw", "fr-sw"], "column_codes": {"en": "en", "fr": "fr", "sw": "swa"}},
+        {"name": "tatoeba", "source": "Helsinki-NLP/tatoeba", "directions": ["en-fr", "ar-en", "en-sw"], "column_codes": {"en": "en", "fr": "fr", "ar": "ar", "sw": "swa"}},
     ]
     train_per_direction: int = 20000
     hpo_subset: int = 5000
