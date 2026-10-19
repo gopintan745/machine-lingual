@@ -1,5 +1,5 @@
 from configs.config import config
-from data import data_utils
+from src.data import data_utils
 
 def load_and_prepare_data():
 
