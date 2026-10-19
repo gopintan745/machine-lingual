@@ -25,10 +25,10 @@ def load_data_sources(config: Config):
         name = dataset["name"]
         directions = dataset["directions"]
         for direction in directions:
-            #src_lang, tgt_lang = direction.split("-")
-            data = load_dataset(name, f"{direction}", cache_dir=config.model.cached_dir)
+            src_lang, tgt_lang = direction.split("-")
+            data = load_dataset(name, f"{src_lang}-{tgt_lang}", cache_dir=config.model.cached_dir)
             datasets[f"{name}_{direction}"] = data
-    return datasets, tokenizer
+    return datasets, tokenizer, src_lang, tgt_lang
 
 
 def clean_data(ds, src, tgt, tokenizer, cfg: Config):
