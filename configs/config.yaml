@@ -8,7 +8,7 @@ data:
   directions: [en-fr, fr-en, en-ar, ar-en, en-sw, sw-en]
 
   sources:                        # verify Hub IDs and licenses before use
-    - name: Helsinki-NLP/opus-100"
+    - name: Helsinki-NLP/opus-100
       directions: [en-fr, ar-en]
     - name: Helsinki-NLP/news_commentary
       directions: [en-fr, ar-en]

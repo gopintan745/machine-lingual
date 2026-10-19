@@ -25,8 +25,7 @@ def load_and_prepare_data():
             "tgt": tgt
         }
 
-        json.dumps(prepared_data)
-        return prepared_data
+    return prepared_data
 
 if __name__ == "__main__":
     print("Loading and preparing data...")

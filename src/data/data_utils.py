@@ -34,7 +34,7 @@ def load_data_sources(config: Config):
             # Try src-tgt then tgt-src (e.g. ar-en instead of en-ar)
             for pair in (f"{src_lang}-{tgt_lang}", f"{tgt_lang}-{src_lang}"):
                 try:
-                    data = load_dataset(hub_path, pair, cache_dir=config.model.cached_dir, split="train")
+                    data = load_dataset(hub_path, pair, cache_dir=config.model.cached_dir, split="train", trust_remote_code=True)
                     break
                 except Exception:
                     continue
