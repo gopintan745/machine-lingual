@@ -1,0 +1,137 @@
+data:
+  seed: 42
+  languages:                      # NLLB language codes
+    en: eng_Latn
+    fr: fra_Latn
+    ar: arb_Arab
+    sw: swh_Latn
+  directions: [en-fr, fr-en, en-ar, ar-en, en-sw, sw-en]
+
+  sources:                        # verify Hub IDs and licenses before use
+    - name: opus-100
+      directions: [en-fr, en-ar, en-sw]
+    - name: news-commentary
+      directions: [en-fr, en-ar]
+    - name: mafand-mt             # news domain, EN/FR<->SW
+      directions: [en-sw, fr-sw]
+    - name: tatoeba
+      directions: [en-fr, en-ar, en-sw]
+
+  sizes:
+    train_per_direction: 20000    # 10-20k for a free Colab
+    hpo_subset: 5000
+    val_per_direction: 500
+
+  cleaning:
+    dedupe: true
+    length_ratio: [0.5, 2.0]      # starting values, tune after inspecting samples
+    min_tokens: 3
+    max_tokens: 128
+    check_langid: true
+
+  eval:
+    dataset: flores-200
+    split: devtest                # never enters training
+    llm_judge_samples: 100        # per direction
+
+  tokenizer:
+    max_length: 128
+
+model:
+  base: facebook/nllb-200-distilled-600M
+  tokenizer: same as base
+  dtype: fp32                  # base weights; fp16 mixed precision via training.fp16
+  max_length: 128
+
+lora:
+  enabled: true
+  task_type: SEQ_2_SEQ_LM
+  r: 16                        # HPO: 8, 16, 32
+  alpha: 32                    # HPO: 16 to 64
+  dropout: 0.05
+  target_modules: [q_proj, k_proj, v_proj, out_proj, fc1, fc2]
+
+training:
+  per_device_batch_size: 16
+  grad_accum_steps: 2
+  learning_rate: 2.0e-4        # HPO range, see below
+  warmup_ratio: 0.05           # HPO: 0.0 to 0.1
+  weight_decay: 0.01
+  epochs: 2
+  fp16: true                   # set false if losses turn NaN
+  gradient_checkpointing: false
+  eval_strategy: steps
+  eval_steps: 500
+  save_steps: 500
+  save_total_limit: 2
+  output_dir: /content/drive/MyDrive/nllb-translation/checkpoints
+  best_metric: chrf
+  seed: 42
+
+generation:
+  num_beams: 4
+  max_new_tokens: 128
+  # forced_bos_token_id is set per example from the target language code
+
+hpo:
+  n_trials: 10
+  max_steps_per_trial: 400
+  data_subset: hpo_subset
+  storage: sqlite:////content/drive/MyDrive/nllb-translation/optuna.db
+  sampler: tpe
+  pruner: median
+  space:
+    learning_rate: {low: 5.0e-5, high: 1.0e-3, log: true}
+    r: [8, 16, 32]
+    alpha: [16, 32, 64]
+    warmup_ratio: {low: 0.0, high: 0.1}
+
+eval:
+  seed: 42
+  systems:                       # compared on identical inputs
+    - name: baseline
+      model: facebook/nllb-200-distilled-600M
+    - name: finetuned
+      model: <your-hub-username>/nllb-600M-lora-merged
+    - name: nllb-1.3B            # optional zero-shot extra
+      model: facebook/nllb-200-1.3B
+
+  test_set:
+    dataset: flores-200
+    split: devtest               # never enters training
+    directions: [en-fr, fr-en, en-ar, ar-en, en-sw, sw-en]
+
+  generation:
+    num_beams: 4
+    max_new_tokens: 128
+
+  metrics:
+    chrf_plus_plus: {enabled: true, word_order: 2}
+    comet: {enabled: false}      # optional, needs extra compute
+
+  llm_judge:
+    enabled: true
+    provider: <free-tier or low-cost API>
+    model: <judge model>         # choose after checking current limits
+    temperature: 0
+    samples_per_direction: 100   # same sampled rows for every system
+    sampling: random             # fixed seed
+    mode: pointwise              # scores one translation at a time
+    pairwise:
+      enabled: false             # baseline vs finetuned, order randomized
+    criteria: [adequacy, fluency, terminology]
+    scale: [1, 5]
+    prompt_version: v1
+    output: json
+    max_retries: 3
+    cache_dir: /content/drive/MyDrive/nllb-translation/judge_cache
+
+  human_check:
+    samples_per_language: 30
+    languages: [fr, ar, sw]
+    export: csv
+
+  report:
+    per_direction_table: true
+    correlations: [spearman_judge_vs_chrf]
+    output_dir: results/

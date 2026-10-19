@@ -1,13 +1,17 @@
 from configs.config import config
 from src.data import data_utils
+import json
 
 def load_and_prepare_data():
 
     prepared_data = {}
 
-    loaded_data, tokenizer, src, tgt = data_utils.load_data_sources(config)
+    loaded_data, tokenizer = data_utils.load_data_sources(config)
 
-    for dataset_key, dataset in loaded_data.items():
+    for dataset_key, item in loaded_data.items():
+        dataset = item["dataset"]
+        src = item["src"]
+        tgt = item["tgt"]
         cleaned_dataset = data_utils.clean_data(dataset, src, tgt, tokenizer, config)
         train_dataset, val_dataset = data_utils.sample_and_split_data(cleaned_dataset, config)
         tokenized_train_dataset = data_utils.tokenize_data(train_dataset, tokenizer, src, tgt, data_utils.nllb_code(config, src), data_utils.nllb_code(config, tgt), config)
@@ -21,8 +25,8 @@ def load_and_prepare_data():
             "tgt": tgt
         }
 
+        json.dumps(prepared_data)
         return prepared_data
-
 
 if __name__ == "__main__":
     print("Loading and preparing data...")
