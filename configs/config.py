@@ -91,7 +91,7 @@ class LoraTrainingConfig(LoraConfig):
 
 
 @dataclass
-class HPOConfig():
+class HPOConfig:
     n_trials: int = 10
     max_steps_per_trial: int = 400
     data_subset: str = "hpo_subset"
