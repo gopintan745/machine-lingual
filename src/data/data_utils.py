@@ -1,11 +1,10 @@
 from configs.config import Config
 from datasets import load_dataset
 from transformers import AutoTokenizer
-
 import fasttext
-lid = fasttext.load_model("lid.176.bin")
 
 def lang_ok(texts, expected, min_conf):
+    lid = fasttext.load_model("lid.176.bin")
     texts = [t.replace("\n", " ") for t in texts]      # predict rejects newlines
     labels, probs = lid.predict(texts, k=1)
     return [l[0] == f"__label__{expected}" and p[0] >= min_conf
