@@ -8,14 +8,14 @@ data:
   directions: [en-fr, fr-en, en-ar, ar-en, en-sw, sw-en]
 
   sources:                        # verify Hub IDs and licenses before use
-    - name: opus-100
-      directions: [en-fr, en-ar, en-sw]
-    - name: news-commentary
-      directions: [en-fr, en-ar]
-    - name: mafand-mt             # news domain, EN/FR<->SW
+    - name: Helsinki-NLP/opus-100"
+      directions: [en-fr, ar-en]
+    - name: Helsinki-NLP/news_commentary
+      directions: [en-fr, ar-en]
+    - name: masakhane/mafand            # news domain, EN/FR<->SW
       directions: [en-sw, fr-sw]
-    - name: tatoeba
-      directions: [en-fr, en-ar, en-sw]
+    - name: Helsinki-NLP/tatoeba
+      directions: [en-fr, ar-en, en-sw]
 
   sizes:
     train_per_direction: 20000    # 10-20k for a free Colab

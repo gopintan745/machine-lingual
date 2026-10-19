@@ -20,15 +20,35 @@ def nllb_code(cfg: Config, lang):
 def load_data_sources(config: Config):
     tokenizer = AutoTokenizer.from_pretrained(config.model.model, cache_dir=config.model.cached_dir)
     datasets = {}
+
     for dataset in config.data.sources:
+        # Use Hub repo path (e.g. "Helsinki-NLP/opus-100") if provided, else fallback to name
+        hub_path = dataset.get("source", dataset["name"])
         name = dataset["name"]
         directions = dataset["directions"]
+
         for direction in directions:
             src_lang, tgt_lang = direction.split("-")
-            data = load_dataset(name, f"{src_lang}-{tgt_lang}", cache_dir=config.model.cached_dir)
-            datasets[f"{name}_{direction}"] = {"dataset": data, "src": src_lang, "tgt": tgt_lang}
-    return datasets, tokenizer
+            data = None
 
+            # Try src-tgt then tgt-src (e.g. ar-en instead of en-ar)
+            for pair in (f"{src_lang}-{tgt_lang}", f"{tgt_lang}-{src_lang}"):
+                try:
+                    data = load_dataset(hub_path, pair, cache_dir=config.model.cached_dir)
+                    break
+                except Exception:
+                    continue
+
+            if data is not None:
+                datasets[f"{name}_{direction}"] = {
+                    "dataset": data,
+                    "src": src_lang,
+                    "tgt": tgt_lang,
+                }
+            else:
+                print(f"Warning: Could not load {hub_path} for direction {direction}")
+
+    return datasets, tokenizer
 
 def clean_data(ds, src, tgt, tokenizer, cfg: Config):
     low, high = cfg.data.min_tokens, cfg.data.max_tokens      # lo must be >= 1
