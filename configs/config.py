@@ -68,7 +68,7 @@ DEFAULT_SOURCE_METADATA = {
     "news-commentary": {"source": "Helsinki-NLP/news_commentary", "column_codes": {"en": "en", "fr": "fr", "ar": "ar"}},
     "mafand": {"source": "masakhane/mafand", "column_codes": {"en": "en", "fr": "fr", "sw": "swa"}},
     "mafand-mt": {"source": "masakhane/mafand", "column_codes": {"en": "en", "fr": "fr", "sw": "swa"}},
-    "tatoeba": {"source": "Helsinki-NLP/tatoeba", "column_codes": {"en": "en", "fr": "fr", "ar": "ar", "sw": "swa"}},
+    "tatoeba": {"source": "Helsinki-NLP/tatoeba", "column_codes": {"en": "en", "fr": "fr", "ar": "ar", "sw": "swh"}},
 }
 
 
