@@ -13,9 +13,9 @@ data:
     - name: Helsinki-NLP/news_commentary
       directions: [en-fr, ar-en]
     - name: masakhane/mafand            # news domain, EN/FR<->SW
-      directions: [en-sw, fr-sw]
+      directions: [en-swa, fr-swa]
     - name: Helsinki-NLP/tatoeba
-      directions: [en-fr, ar-en, en-sw]
+      directions: [en-fr, ar-en, en-swh]
 
   sizes:
     train_per_direction: 20000    # 10-20k for a free Colab
