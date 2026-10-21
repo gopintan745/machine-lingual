@@ -19,7 +19,14 @@ def objective(trial: Trial, model: Any, tokenized_train_dataset: Any, tokenized_
         config.lora.r = r
         config.lora.lora_alpha = lora_alpha
 
-        trainer = build_trainer(model, tokenized_train_dataset, tokenized_val_dataset, tokenizer, config)
+        trainer = build_trainer(
+            model, 
+            tokenized_train_dataset, 
+            tokenized_val_dataset, 
+            tokenizer, 
+            config,
+            metric_for_best_model="eval_loss"  # Ensure we are optimizing for evaluation loss
+        )
         results = trainer.train()
 
         return results["eval_loss"]  # Returns the evaluation loss to be minimized
@@ -38,6 +45,7 @@ def run_hyperparameter_search(model, tokenized_train_dataset, tokenized_val_data
         pruner = MedianPruner()
 
     study = create_study(
+        study_name="machine_lingual_hpo_study",
         direction='minimize', # Minimize the evaluation loss
         storage=config.hpo.storage,
         sampler=sampler,

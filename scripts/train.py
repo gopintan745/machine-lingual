@@ -3,6 +3,7 @@ from training.hpo import run_hyperparameter_search
 from training.trainer import build_trainer
 from configs.config import config
 from models.model import load_model
+from training.train_full import full_training
 
 
 if __name__ == "__main__":
@@ -28,3 +29,15 @@ if __name__ == "__main__":
         print(f"Running HPO for dataset: {dataset_key}")
         run_hyperparameter_search(model, tokenized_train_dataset, tokenized_val_dataset, tokenizer)
         print(f"HPO completed for dataset: {dataset_key}")
+
+
+    # Full training after hyperparameter optimization
+    print("Starting full training...")
+    for dataset_key, item in data.items():
+        tokenized_train_dataset = item["train"]
+        tokenized_val_dataset = item["val"]
+        tokenizer = item["tokenizer"]
+
+        print(f"Running Full training for {dataset_key}")
+        full_training(model, tokenized_train_dataset, tokenized_val_dataset, tokenizer, config)
+        print(f"Training complete for {dataset_key}")
