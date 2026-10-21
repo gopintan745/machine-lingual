@@ -1,9 +1,9 @@
-from data.data_prep import load_and_prepare_data
-from training.hpo import run_hyperparameter_search
-from training.trainer import build_trainer
+from src.data.data_prep import load_and_prepare_data
+from src.training.hpo import run_hyperparameter_search
+from src.training.trainer import build_trainer
 from configs.config import config
-from models.model import load_model
-from training.train_full import full_training
+from src.models.model import load_model
+from src.training.train_full import full_training
 
 
 if __name__ == "__main__":
