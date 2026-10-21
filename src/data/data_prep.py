@@ -1,4 +1,4 @@
-from configs.config import Config
+from configs.config import Config, config
 from datasets import load_dataset
 from transformers import AutoTokenizer
 import fasttext
@@ -96,3 +96,30 @@ def tokenize_data(ds, tokenizer, src, tgt, src_code, tgt_code, cfg: Config):
                          truncation=True)
 
     return ds.map(tokenize, batched=True, remove_columns=ds.column_names)
+
+
+def load_and_prepare_data():
+
+    prepared_data = {}
+
+    loaded_data, tokenizer = load_data_sources(config)
+
+    for dataset_key, item in loaded_data.items():
+        dataset = item["dataset"]
+        src = item["src"]
+        tgt = item["tgt"]
+        cleaned_dataset = clean_data(dataset, src, tgt, tokenizer, config)
+        train_dataset, val_dataset = sample_and_split_data(cleaned_dataset, config)
+        tokenized_train_dataset = tokenize_data(train_dataset, tokenizer, src, tgt, nllb_code(config, src), nllb_code(config, tgt), config)
+        tokenized_val_dataset = tokenize_data(val_dataset, tokenizer, src, tgt, nllb_code(config, src), nllb_code(config, tgt), config)
+
+        prepared_data[dataset_key] = {
+            "train": tokenized_train_dataset,
+            "val": tokenized_val_dataset,
+            "tokenizer": tokenizer,
+            "src": src,
+            "tgt": tgt
+        }
+
+    return prepared_data
+
