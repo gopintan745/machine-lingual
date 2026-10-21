@@ -33,11 +33,13 @@ if __name__ == "__main__":
 
     # Full training after hyperparameter optimization
     print("Starting full training...")
+    full_results = {}
     for dataset_key, item in data.items():
         tokenized_train_dataset = item["train"]
         tokenized_val_dataset = item["val"]
         tokenizer = item["tokenizer"]
 
         print(f"Running Full training for {dataset_key}")
-        full_training(model, tokenized_train_dataset, tokenized_val_dataset, tokenizer, config)
+        results = full_training(model, tokenized_train_dataset, tokenized_val_dataset, tokenizer, config)
+        full_results[dataset_key] = results
         print(f"Training complete for {dataset_key}")

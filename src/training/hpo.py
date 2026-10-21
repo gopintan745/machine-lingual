@@ -4,6 +4,8 @@ from optuna import Trial, create_study, TrialPruned
 from optuna.samplers import TPESampler
 from optuna.pruners import MedianPruner
 from typing import Any
+from optuna.importance import get_param_importances
+from src.eval.visuals import plot_optimization_results, plot_hyperparameter_importance
 
 
 def objective(trial: Trial, model: Any, tokenized_train_dataset: Any, tokenized_val_dataset: Any, tokenizer: Any) -> Any:
@@ -50,8 +52,17 @@ def run_hyperparameter_search(model, tokenized_train_dataset, tokenized_val_data
         storage=config.hpo.storage,
         sampler=sampler,
         pruner=pruner,
-        )  # Create a new study for hyperparameter optimization
+        ) 
+    # Create a new study for hyperparameter optimization
     study.optimize(lambda trial: objective(trial, model, tokenized_train_dataset, tokenized_val_dataset, tokenizer), n_trials=config.hpo.n_trials)
+
+    # Plot the optimization results
+    plot_optimization_results([trial.value for trial in study.trials], title="Hyperparameter Optimization Results", xlabel="Trial Number", ylabel="Evaluation Loss")
+
+    # PLot the hyperparameter importance
+    importance = get_param_importances(study)
+    plot_hyperparameter_importance(importance, title="Hyperparameter Importance", xlabel="Hyperparameters", ylabel="Importance Score")
+
 
     print("Best trial:")
     trial = study.best_trial
