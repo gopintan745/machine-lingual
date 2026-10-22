@@ -1,137 +1,106 @@
 data:
   seed: 42
-  languages:                      # NLLB language codes
-    en: eng_Latn
-    fr: fra_Latn
-    ar: arb_Arab
-    sw: swh_Latn
-  directions: [en-fr, fr-en, en-ar, ar-en, en-sw, sw-en]
+  languages:                       # short code -> NLLB code, fastText label, display info
+    en: {nllb: eng_Latn, fasttext: en, name: English, rtl: false}
+    fr: {nllb: fra_Latn, fasttext: fr, name: French,  rtl: false}
+    ar: {nllb: arb_Arab, fasttext: ar, name: Arabic,  rtl: true}
+    sw: {nllb: swh_Latn, fasttext: sw, name: Swahili, rtl: false}
+  directions: [en-fr, fr-en, en-ar, ar-en, en-sw, sw-en]   # each one is trained AND evaluated
 
-  sources:                        # verify Hub IDs and licenses before use
-    - name: Helsinki-NLP/opus-100
-      directions: [en-fr, ar-en]
-    - name: Helsinki-NLP/news_commentary
-      directions: [en-fr, ar-en]
-    - name: masakhane/mafand            # news domain, EN/FR<->SW
-      directions: [en-swa, fr-swa]
-    - name: Helsinki-NLP/tatoeba
-      directions: [en-fr, ar-en, en-swh]
+  # Each source lists the unordered pairs it can supply. Both directions are built
+  # from every pair automatically (only those listed in `directions`).
+  # VERIFY every Hub ID / config name once with: load_dataset(id, cfg).column_names
+  sources:
+    - name: opus-100
+      hub_id: Helsinki-NLP/opus-100
+      pairs: [en-fr, en-ar, en-sw]
+    - name: news-commentary
+      hub_id: Helsinki-NLP/news_commentary
+      pairs: [en-fr, en-ar]
+    - name: mafand                 # news domain, EN<->SW
+      hub_id: masakhane/mafand
+      pairs: [en-sw]
+      configs: {en-sw: en-swa}     # Hub config name
+      column_codes: {sw: swa}      # key inside the "translation" dict
+    # - name: tatoeba              # unverified: check config names and schema before enabling
+    #   hub_id: Helsinki-NLP/tatoeba
+    #   pairs: [en-fr, en-ar, en-sw]
 
   sizes:
-    train_per_direction: 20000    # 10-20k for a free Colab
+    train_per_direction: 20000     # per DIRECTION after merging sources
     hpo_subset: 5000
     val_per_direction: 500
+    pool_factor: 3
 
   cleaning:
     dedupe: true
-    length_ratio: [0.5, 2.0]      # starting values, tune after inspecting samples
+    length_ratio: [0.5, 2.0]       # starting values, tune after inspecting dropped pairs
     min_tokens: 3
     max_tokens: 128
-    check_langid: true
-
-  eval:
-    dataset: flores-200
-    split: devtest                # never enters training
-    llm_judge_samples: 100        # per direction
+    langid:
+      enabled: true
+      model_path: lid.176.bin      # downloaded once if missing (needs internet)
+      min_confidence: 0.5
 
   tokenizer:
     max_length: 128
 
 model:
   base: facebook/nllb-200-distilled-600M
-  tokenizer: same as base
-  dtype: fp32                  # base weights; fp16 mixed precision via training.fp16
+  cache_dir: null
   max_length: 128
 
 lora:
-  enabled: true
-  task_type: SEQ_2_SEQ_LM
-  r: 16                        # HPO: 8, 16, 32
-  alpha: 32                    # HPO: 16 to 64
+  r: 16
+  alpha: 32
   dropout: 0.05
   target_modules: [q_proj, k_proj, v_proj, out_proj, fc1, fc2]
 
 training:
+  output_dir: checkpoints          # relative -> under WORK_DIR (/kaggle/working on Kaggle)
+  epochs: 2
   per_device_batch_size: 16
   grad_accum_steps: 2
-  learning_rate: 2.0e-4        # HPO range, see below
-  warmup_ratio: 0.05           # HPO: 0.0 to 0.1
+  learning_rate: 2.0e-4
   weight_decay: 0.01
-  epochs: 2
-  fp16: true                   # set false if losses turn NaN
-  gradient_checkpointing: false
-  eval_strategy: steps
+  warmup_ratio: 0.05
+  logging_steps: 50
   eval_steps: 500
   save_steps: 500
   save_total_limit: 2
-  output_dir: /content/drive/MyDrive/nllb-translation/checkpoints
-  best_metric: chrf
+  fp16: true                       # set false if losses turn NaN
+  gradient_checkpointing: false
+  report_to: none
   seed: 42
 
 generation:
   num_beams: 4
   max_new_tokens: 128
-  # forced_bos_token_id is set per example from the target language code
 
 hpo:
   n_trials: 10
   max_steps_per_trial: 400
-  data_subset: hpo_subset
-  storage: sqlite:////content/drive/MyDrive/nllb-translation/optuna.db
-  sampler: tpe
-  pruner: median
+  study_name: machine_lingual_hpo
+  storage_path: optuna/hpo.db
   space:
     learning_rate: {low: 5.0e-5, high: 1.0e-3, log: true}
     r: [8, 16, 32]
     alpha: [16, 32, 64]
     warmup_ratio: {low: 0.0, high: 0.1}
 
-eval:
+hub:
+  repo_id: ${HF_USERNAME}/nllb-600M-lora
+  private: false
+
+eval:                              # not typed yet; keep as plain data until the harness exists
   seed: 42
-  systems:                       # compared on identical inputs
-    - name: baseline
-      model: facebook/nllb-200-distilled-600M
-    - name: finetuned
-      model: <your-hub-username>/nllb-600M-lora-merged
-    - name: nllb-1.3B            # optional zero-shot extra
-      model: facebook/nllb-200-1.3B
-
-  test_set:
-    dataset: flores-200
-    split: devtest               # never enters training
-    directions: [en-fr, fr-en, en-ar, ar-en, en-sw, sw-en]
-
-  generation:
-    num_beams: 4
-    max_new_tokens: 128
-
+  systems:
+    - {name: baseline,  model: facebook/nllb-200-distilled-600M}
+    - {name: finetuned, model: "${HF_USERNAME}/nllb-600M-lora"}
+    - {name: nllb-1.3B, model: facebook/nllb-200-1.3B}
+  test_set: {dataset: flores-200, split: devtest}
+  generation: {num_beams: 4, max_new_tokens: 128}
   metrics:
     chrf_plus_plus: {enabled: true, word_order: 2}
-    comet: {enabled: false}      # optional, needs extra compute
-
-  llm_judge:
-    enabled: true
-    provider: <free-tier or low-cost API>
-    model: <judge model>         # choose after checking current limits
-    temperature: 0
-    samples_per_direction: 100   # same sampled rows for every system
-    sampling: random             # fixed seed
-    mode: pointwise              # scores one translation at a time
-    pairwise:
-      enabled: false             # baseline vs finetuned, order randomized
-    criteria: [adequacy, fluency, terminology]
-    scale: [1, 5]
-    prompt_version: v1
-    output: json
-    max_retries: 3
-    cache_dir: /content/drive/MyDrive/nllb-translation/judge_cache
-
-  human_check:
-    samples_per_language: 30
-    languages: [fr, ar, sw]
-    export: csv
-
-  report:
-    per_direction_table: true
-    correlations: [spearman_judge_vs_chrf]
-    output_dir: results/
+    comet: {enabled: false}
+  llm_judge: {enabled: false}
