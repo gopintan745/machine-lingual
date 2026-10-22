@@ -25,10 +25,11 @@ def plot_chrf_scores(chrf_scores, title="chrF++ Scores", xlabel="Language Pairs"
     plt.ylim(0, 1)  # chrF++ scores range from 0 to 1
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.tight_layout()
+    plt.savefig(f"chrf_scores_plot_{language_pairs}.png")  # Save the plot as a PNG file
     plt.show()
 
 
-def plot_loss_curve(train_losses, val_losses, title="Training and Validation Loss", xlabel="Epochs", ylabel="Loss"):
+def plot_loss_curve(train_losses, val_losses, title="Training and Validation Loss", xlabel="Epochs", ylabel="Loss", language_pairs:str|None = None):
     """
     Plots the training and validation loss curves.
 
@@ -38,6 +39,7 @@ def plot_loss_curve(train_losses, val_losses, title="Training and Validation Los
         title (str): The title of the plot.
         xlabel (str): The label for the x-axis.
         ylabel (str): The label for the y-axis.
+        language_pairs(str |None): The language pair of the dataset being trained and evaluated.
     """
     epochs = np.arange(1, len(train_losses) + 1)
 
@@ -51,11 +53,12 @@ def plot_loss_curve(train_losses, val_losses, title="Training and Validation Los
     plt.legend()
     plt.grid(linestyle='--', alpha=0.7)
     plt.tight_layout()
+    plt.savefig(f"loss_curve_plot_{language_pairs}")
     plt.show()
 
 
 
-def plot_optimization_results(trial_values, title="Hyperparameter Optimization Results", xlabel="Trial Number", ylabel="Evaluation Loss"):
+def plot_optimization_results(trial_values, title="Hyperparameter Optimization Results", xlabel="Trial Number", ylabel="Evaluation Loss", language_pairs:str|None = None):
     """
     Plots the results of hyperparameter optimization trials.
 
@@ -64,6 +67,7 @@ def plot_optimization_results(trial_values, title="Hyperparameter Optimization R
         title (str): The title of the plot.
         xlabel (str): The label for the x-axis.
         ylabel (str): The label for the y-axis.
+        language_pairs(str |None): The language pair of the dataset being trained and evaluated.
     """
     trials = np.arange(1, len(trial_values) + 1)
 
@@ -75,10 +79,11 @@ def plot_optimization_results(trial_values, title="Hyperparameter Optimization R
     plt.xticks(trials)
     plt.grid(linestyle='--', alpha=0.7)
     plt.tight_layout()
+    plt.savefig(f"optimization_results_{language_pairs}")
     plt.show()
 
 
-def plot_hyperparameter_importance(importance_dict, title="Hyperparameter Importance", xlabel="Hyperparameters", ylabel="Importance Score"):
+def plot_hyperparameter_importance(importance_dict, title="Hyperparameter Importance", xlabel="Hyperparameters", ylabel="Importance Score", language_pair:str|None =None):
     """
     Plots the importance of different hyperparameters based on their impact on the evaluation loss.
 
@@ -87,6 +92,7 @@ def plot_hyperparameter_importance(importance_dict, title="Hyperparameter Import
         title (str): The title of the plot.
         xlabel (str): The label for the x-axis.
         ylabel (str): The label for the y-axis.
+        language_pairs(str |None): The language pair of the dataset being trained and evaluated.
     """
     hyperparameters = list(importance_dict.keys())
     importance_scores = list(importance_dict.values())
@@ -99,10 +105,11 @@ def plot_hyperparameter_importance(importance_dict, title="Hyperparameter Import
     plt.xticks(rotation=45)
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.tight_layout()
+    plt.savefig(f"hyperparameter_importance_{language_pair}")
     plt.show()
 
 
-def plot_chrf_vs_llm_jugdement(chrf_scores, llm_judgement_scores, title="chrF++ vs LLM Judgement Scores", xlabel="Language Pairs", ylabel="Scores"):
+def plot_chrf_vs_llm_jugdement(chrf_scores, llm_judgement_scores, title="chrF++ vs LLM Judgement Scores", xlabel="Language Pairs", ylabel="Scores", language_pairs:str|None = None):
     """
     Plots the chrF++ scores against LLM judgement scores for different language pairs.
 
@@ -112,6 +119,7 @@ def plot_chrf_vs_llm_jugdement(chrf_scores, llm_judgement_scores, title="chrF++ 
         title (str): The title of the plot.
         xlabel (str): The label for the x-axis.
         ylabel (str): The label for the y-axis.
+        language_pairs(str |None): The language pair of the dataset being trained and evaluated.
     """
     language_pairs = list(chrf_scores.keys())
     chrf_values = list(chrf_scores.values())
