@@ -63,7 +63,7 @@ def run_hyperparameter_search(model, tokenized_train_dataset, tokenized_val_data
     importance = get_param_importances(study)
     plot_hyperparameter_importance(importance, title="Hyperparameter Importance", xlabel="Hyperparameters", ylabel="Importance Score")
 
-
+    # Print the best trial and its parameters
     print("Best trial:")
     trial = study.best_trial
 
