@@ -7,7 +7,7 @@ This code would load the optuna.db file before full training.
 """
 import os
 from optuna import load_study
-from training.trainer import build_trainer
+from src.training.trainer import build_trainer
 from configs.config import Config
 
 def full_training(model, tokenized_train_dataset, tokenized_val_dataset, tokenizer, config: Config):
