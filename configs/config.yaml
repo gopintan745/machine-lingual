@@ -17,15 +17,23 @@ data:
     - name: news-commentary
       hub_id: Helsinki-NLP/news_commentary
       pairs: [en-fr, en-ar]
-    - name: mafand                 # news domain, EN<->SW
-      hub_id: masakhane/mafand
+    #- name: mafand                 # news domain, EN<->SW
+    #  hub_id: masakhane/mafand
+    #  pairs: [en-sw]
+    #  configs: {en-sw: en-swa}     # Hub config name
+    #  column_codes: {sw: swa}      # key inside the "translation" dict
+    #  revision: refs/convert/parquet # mafand is script-based 
+    - name: armelrandy
+      hub_id: ArmelRandy/nllb_en_sw_20K
       pairs: [en-sw]
-      configs: {en-sw: en-swa}     # Hub config name
-      column_codes: {sw: swa}      # key inside the "translation" dict
-      revision: refs/convert/parquet # mafand is script-based 
+    - name: amaniopia
+      hub_id: amaniopia/en-sw-processed
+      pairs: [en-sw]
     # - name: tatoeba              # unverified: check config names and schema before enabling
-    #   hub_id: Helsinki-NLP/tatoeba
-    #   pairs: [en-fr, en-ar, en-sw]
+    #   hub_id: mteb/tatoeba-bitext-mining
+    #   pairs: [fr-en, ar-en, sw-en]
+    #   config: {fr-en: fra-eng, }
+    #   column_names: 
 
   sizes:
     train_per_direction: 20000     # per DIRECTION after merging sources
