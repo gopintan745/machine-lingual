@@ -69,7 +69,7 @@ def _load_pair(source, a: str, b: str, seed: int, pool: int) -> Optional[Dataset
     ds, last_err = None, None
     for name in names:
         try:
-            ds = load_dataset(source.hub_id, name, split="train")
+            ds = load_dataset(source.hub_id, name, split="train", revision=source.revision)
             break
         except Exception as e:               # keep the reason; print it if every candidate fails
             last_err = e

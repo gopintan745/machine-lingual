@@ -22,6 +22,7 @@ data:
       pairs: [en-sw]
       configs: {en-sw: en-swa}     # Hub config name
       column_codes: {sw: swa}      # key inside the "translation" dict
+      revision: refs/convert/parquet # mafand is script-based 
     # - name: tatoeba              # unverified: check config names and schema before enabling
     #   hub_id: Helsinki-NLP/tatoeba
     #   pairs: [en-fr, en-ar, en-sw]

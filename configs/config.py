@@ -49,6 +49,7 @@ class Source:
     pairs: List[str]                                            # e.g. ["en-fr"]; order does not matter
     configs: Dict[str, str] = field(default_factory=dict)       # canonical pair -> Hub config name
     column_codes: Dict[str, str] = field(default_factory=dict)  # short code -> key in "translation"
+    revision: Optional[str] = None
 
 
 @dataclass
