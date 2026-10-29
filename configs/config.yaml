@@ -25,10 +25,12 @@ data:
     #  revision: refs/convert/parquet # mafand is script-based 
     - name: armelrandy
       hub_id: ArmelRandy/nllb_en_sw_20K
-      pairs: [en-sw, default]
+      pairs: [en-sw]
+      configs: {en-sw: default}
     - name: amaniopia
       hub_id: amaniopia/en-sw-processed
-      pairs: [en-sw, default]
+      pairs: [en-sw]
+      configs: {en-sw: default}
     # - name: tatoeba              # unverified: check config names and schema before enabling
     #   hub_id: mteb/tatoeba-bitext-mining
     #   pairs: [fr-en, ar-en, sw-en]
