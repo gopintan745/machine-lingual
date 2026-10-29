@@ -76,15 +76,23 @@ def _load_pair(source, a: str, b: str, seed: int, pool: int) -> Optional[Dataset
     if ds is None:
         print(f"[WARN] {source.name} / {canon}: could not load (tried {names}). Last error: {last_err!r}")
         return None
-    if "translation" not in ds.column_names:
-        raise ValueError(f"{source.name}: expected a 'translation' column, found {ds.column_names}. "
-                         f"Adjust _load_pair for this schema.")
-    ds = ds.shuffle(seed=seed).select(range(min(pool, len(ds))))      # pool BEFORE cleaning (speed)
-    return ds.map(
-        lambda batch: {a: [p[ka] for p in batch["translation"]],
-                       b: [p[kb] for p in batch["translation"]]},
-        batched=True, remove_columns=ds.column_names)
-
+    cols = ds.column_names
+    ds = ds.shuffle(seed=seed).select(range(min(pool, len(ds))))
+    if "translation" in cols:                                  # {"translation": {"en": ..., "sw": ...}}
+        ds = ds.map(
+            lambda batch: {a: [p[ka] for p in batch["translation"]],
+                           b: [p[kb] for p in batch["translation"]]},
+            batched=True, remove_columns=cols)
+    elif ka in cols and kb in cols:                            # flat columns: "en", "sw"
+        ds = ds.select_columns([ka, kb])
+        rename = {k: v for k, v in ((ka, a), (kb, b)) if k != v}
+        if rename:
+            ds = ds.rename_columns(rename)
+    else:
+        raise ValueError(f"{source.name}: need a 'translation' column or columns "
+                         f"'{ka}' and '{kb}', found {cols}.")
+    return ds.filter(lambda ex: isinstance(ex[a], str) and isinstance(ex[b], str)
+                     and ex[a].strip() != "" and ex[b].strip() != "")
 
 # ----------------------------------------------------------------------------- cleaning
 def clean_pairs(ds: Dataset, a: str, b: str, tokenizer, cfg: Config, lid: Optional[LangID]) -> Dataset:
