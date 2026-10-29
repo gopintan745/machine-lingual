@@ -65,7 +65,7 @@ def _load_pair(source, a: str, b: str, seed: int, pool: int) -> Optional[Dataset
     elif rev in source.configs:
         names = [source.configs[rev]]
     else:                                   # try both orders; datasets differ on which they use
-        names = [f"{ka}-{kb}", f"{kb}-{ka}"]
+        names = [f"{ka}-{kb}", f"{kb}-{ka}", None]
     ds, last_err = None, None
     for name in names:
         try:
