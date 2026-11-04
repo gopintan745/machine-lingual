@@ -70,8 +70,8 @@ lora:
 training:
   output_dir: checkpoints          # relative -> under WORK_DIR (/kaggle/working on Kaggle)
   epochs: 2
-  per_device_batch_size: 16
-  grad_accum_steps: 2
+  per_device_batch_size: 8
+  grad_accum_steps: 4
   learning_rate: 2.0e-4
   weight_decay: 0.01
   warmup_ratio: 0.05

@@ -38,6 +38,10 @@ def build_trainer(
     out = output_dir or t.output_dir
     total = _total_steps(cfg, len(train_dataset), max_steps)
     steps = eval_steps or t.eval_steps
+    n_gpu = max(1, torch.cuda.device_count())
+    print(f"[trainer] GPUs visible: {n_gpu} | per-device batch: {t.per_device_batch_size} | "
+          f"accumulation: {t.grad_accum_steps} | effective batch: "
+          f"{t.per_device_batch_size * t.grad_accum_steps * n_gpu} | total steps: {total}")
 
     args = dict(
         output_dir=out,

@@ -7,6 +7,7 @@
 On Kaggle set WORK_DIR=/kaggle/working and HF_USERNAME first.
 """
 from __future__ import annotations
+import os
 
 import argparse
 
@@ -16,6 +17,10 @@ from configs.config import load_config
 from src.data.data_prep import prepare_data
 from src.training.hpo import run_hyperparameter_search
 from src.training.train_full import full_training
+
+
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", 0)
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")  # avoid OOM on small GPUs
 
 
 def apply_smoke(cfg):
