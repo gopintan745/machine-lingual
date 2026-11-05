@@ -19,7 +19,7 @@ from src.training.hpo import run_hyperparameter_search
 from src.training.train_full import full_training
 
 
-os.environ.setdefault("CUDA_VISIBLE_DEVICES", 0)
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "0")
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")  # avoid OOM on small GPUs
 
 
