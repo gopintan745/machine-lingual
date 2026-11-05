@@ -13,7 +13,7 @@ from configs.config import Config
 
 def full_training(tokenized_train_dataset, tokenized_val_dataset, tokenizer, config: Config):
     # Load the best hyperparameters from the Optuna study
-    study = load_study(study_name="machine_lingual_hpo_study", storage=config.hpo.storage)
+    study = load_study(study_name=config.hpo.study_name, storage=config.hpo.storage)
     best_trial = study.best_trial
 
     # Update the config with the best hyperparameters
