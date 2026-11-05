@@ -8,9 +8,10 @@ This code would load the optuna.db file before full training.
 import os
 from optuna import load_study
 from src.training.trainer import build_trainer
+from src.models.model import load_model
 from configs.config import Config
 
-def full_training(model, tokenized_train_dataset, tokenized_val_dataset, tokenizer, config: Config):
+def full_training(tokenized_train_dataset, tokenized_val_dataset, tokenizer, config: Config):
     # Load the best hyperparameters from the Optuna study
     study = load_study(study_name="machine_lingual_hpo_study", storage=config.hpo.storage)
     best_trial = study.best_trial
@@ -26,7 +27,8 @@ def full_training(model, tokenized_train_dataset, tokenized_val_dataset, tokeniz
     config.lora.r = best_trial.params['r']
     config.lora.lora_alpha = best_trial.params['lora_alpha']
 
-    # Build trainer with the updated config
+    # Load model and build trainer with the updated config
+    model = load_model(config)
     trainer = build_trainer(model, tokenized_train_dataset, tokenized_val_dataset, tokenizer, config)
 
     # Run training
