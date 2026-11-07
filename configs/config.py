@@ -129,6 +129,7 @@ class TrainingConfig:
     epochs: int = 2
     per_device_batch_size: int = 8
     grad_accum_steps: int = 4
+    max_train_epoch: int = 3
     learning_rate: float = 2.0e-4
     weight_decay: float = 0.01
     warmup_ratio: float = 0.05
