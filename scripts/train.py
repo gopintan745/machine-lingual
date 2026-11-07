@@ -68,7 +68,7 @@ def main():
     if args.stage in ("hpo", "all"):
         run_hyperparameter_search(cfg, train_ds, val_ds, tokenizer)
     if args.stage in ("train", "all"):
-        full_training(cfg, train_ds, val_ds, tokenizer)
+        full_training(train_ds, val_ds, tokenizer, cfg)
 
 
 if __name__ == "__main__":
