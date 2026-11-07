@@ -7,7 +7,13 @@
 On Kaggle set WORK_DIR=/kaggle/working and HF_USERNAME first.
 """
 from __future__ import annotations
+
 import os
+
+# DataParallel on 2 GPUs gathers every logits tensor onto GPU 0 and runs out of memory with NLLB's
+# ~256k vocabulary. Use one GPU unless you override it: CUDA_VISIBLE_DEVICES=0,1 python -m scripts.train ...
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "0")
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 import argparse
 
@@ -17,10 +23,6 @@ from configs.config import load_config
 from src.data.data_prep import prepare_data
 from src.training.hpo import run_hyperparameter_search
 from src.training.train_full import full_training
-
-
-os.environ.setdefault("CUDA_VISIBLE_DEVICES", "0")
-os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")  # avoid OOM on small GPUs
 
 
 def apply_smoke(cfg):
@@ -44,6 +46,8 @@ def main():
     ap.add_argument("--stage", choices=["data", "hpo", "train", "all"], default="all")
     ap.add_argument("--smoke", action="store_true", help="tiny run to validate the whole pipeline")
     ap.add_argument("--no-cache", action="store_true", help="rebuild the tokenized datasets")
+    ap.add_argument("--decontaminate", action="store_true",
+                    help="drop training pairs that contain a test-set sentence (loads eval.test_set)")
     args = ap.parse_args()
 
     cfg = load_config(args.config)
@@ -51,7 +55,12 @@ def main():
         cfg = apply_smoke(cfg)
 
     tokenizer = AutoTokenizer.from_pretrained(cfg.model.base, cache_dir=cfg.model.cache_dir)
-    train_ds, val_ds = prepare_data(cfg, tokenizer, use_cache=not args.no_cache)
+    blocked = None
+    if args.decontaminate:
+        from src.eval.testsets import build_blocklist
+        blocked = build_blocklist(cfg)
+        print(f"Decontamination: blocking {len(blocked)} test sentences")
+    train_ds, val_ds = prepare_data(cfg, tokenizer, use_cache=not args.no_cache, blocked=blocked)
     print(f"Train rows: {len(train_ds)} | Val rows: {len(val_ds)}")
     if args.stage == "data":
         return
@@ -59,7 +68,7 @@ def main():
     if args.stage in ("hpo", "all"):
         run_hyperparameter_search(cfg, train_ds, val_ds, tokenizer)
     if args.stage in ("train", "all"):
-        full_training(train_ds, val_ds, tokenizer, cfg)
+        full_training(cfg, train_ds, val_ds, tokenizer)
 
 
 if __name__ == "__main__":

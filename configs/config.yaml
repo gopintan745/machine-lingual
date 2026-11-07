@@ -13,29 +13,20 @@ data:
   sources:
     - name: opus-100
       hub_id: Helsinki-NLP/opus-100
-      pairs: [en-fr, en-ar]
+      pairs: [en-fr, en-ar, en-sw]
     - name: news-commentary
       hub_id: Helsinki-NLP/news_commentary
       pairs: [en-fr, en-ar]
-    #- name: mafand                 # news domain, EN<->SW
-    #  hub_id: masakhane/mafand
-    #  pairs: [en-sw]
-    #  configs: {en-sw: en-swa}     # Hub config name
-    #  column_codes: {sw: swa}      # key inside the "translation" dict
-    #  revision: refs/convert/parquet # mafand is script-based 
-    - name: armelrandy
+    - name: nllb-en-sw-20k         # flat columns en/sw, single "default" config, 20k rows
       hub_id: ArmelRandy/nllb_en_sw_20K
       pairs: [en-sw]
       configs: {en-sw: default}
-    - name: amaniopia
+    - name: en-sw-processed        # VERIFY THE EXACT HUB ID before enabling (could not be found)
       hub_id: amaniopia/en-sw-processed
       pairs: [en-sw]
-      configs: {en-sw: default}
     # - name: tatoeba              # unverified: check config names and schema before enabling
-    #   hub_id: mteb/tatoeba-bitext-mining
-    #   pairs: [fr-en, ar-en, sw-en]
-    #   config: {fr-en: fra-eng, }
-    #   column_names: 
+    #   hub_id: Helsinki-NLP/tatoeba
+    #   pairs: [en-fr, en-ar, en-sw]
 
   sizes:
     train_per_direction: 20000     # per DIRECTION after merging sources
@@ -73,7 +64,6 @@ training:
   per_device_batch_size: 8
   grad_accum_steps: 4
   learning_rate: 2.0e-4
-  num_train_epochs: 3
   weight_decay: 0.01
   warmup_ratio: 0.05
   logging_steps: 50
@@ -104,15 +94,26 @@ hub:
   repo_id: ${HF_USERNAME}/nllb-600M-lora
   private: false
 
-eval:                              # not typed yet; keep as plain data until the harness exists
+eval:
   seed: 42
+  output_dir: results              # relative -> under WORK_DIR
+  baseline: baseline               # the system everything else is compared against
   systems:
-    - {name: baseline,  model: facebook/nllb-200-distilled-600M}
-    - {name: finetuned, model: "${HF_USERNAME}/nllb-600M-lora"}
-    - {name: nllb-1.3B, model: facebook/nllb-200-1.3B}
-  test_set: {dataset: flores-200, split: devtest}
-  generation: {num_beams: 4, max_new_tokens: 128}
-  metrics:
-    chrf_plus_plus: {enabled: true, word_order: 2}
-    comet: {enabled: false}
-  llm_judge: {enabled: false}
+    - {name: baseline,  base: facebook/nllb-200-distilled-600M}
+    - {name: finetuned, base: facebook/nllb-200-distilled-600M, adapter: checkpoints/best_model}
+    # - {name: nllb-1.3B, base: facebook/nllb-200-1.3B}      # optional extra zero-shot baseline
+  test_set:                        # directions come from data.directions
+    kind: per_language             # one Hub config per language, sentence in `text_column`
+    hub_id: openlanguagedata/flores_plus   # UNVERIFIED and possibly gated: accept terms, set HF_TOKEN
+    split: devtest
+    text_column: text
+    # kind: wide                   # one row per sentence, one column per language
+    # hub_id: <dataset id>
+    # columns: {en: sentence_eng_Latn, fr: sentence_fra_Latn, ar: sentence_arb_Arab, sw: sentence_swh_Latn}
+    # kind: files                  # line-aligned local files, e.g. flores200_dataset/devtest/eng_Latn.devtest
+    # path: /kaggle/input/flores200/devtest
+    # file_pattern: "{nllb}.{split}"
+  generation: {num_beams: 4, max_new_tokens: 128, batch_size: 32}
+  chrf: {word_order: 2}
+  bootstrap_resamples: 2000
+  llm_judge: {enabled: false, samples_per_direction: 100}

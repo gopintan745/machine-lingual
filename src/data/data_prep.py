@@ -65,7 +65,7 @@ def _load_pair(source, a: str, b: str, seed: int, pool: int) -> Optional[Dataset
     elif rev in source.configs:
         names = [source.configs[rev]]
     else:                                   # try both orders; datasets differ on which they use
-        names = [f"{ka}-{kb}", f"{kb}-{ka}", None]
+        names = [f"{ka}-{kb}", f"{kb}-{ka}", None]   # None = the dataset's only/default config
     ds, last_err = None, None
     for name in names:
         try:
@@ -77,22 +77,24 @@ def _load_pair(source, a: str, b: str, seed: int, pool: int) -> Optional[Dataset
         print(f"[WARN] {source.name} / {canon}: could not load (tried {names}). Last error: {last_err!r}")
         return None
     cols = ds.column_names
-    ds = ds.shuffle(seed=seed).select(range(min(pool, len(ds))))
-    if "translation" in cols:                                  # {"translation": {"en": ..., "sw": ...}}
+    ds = ds.shuffle(seed=seed).select(range(min(pool, len(ds))))      # pool BEFORE cleaning (speed)
+    if "translation" in cols:                                         # {"translation": {"en": ..., "sw": ...}}
         ds = ds.map(
             lambda batch: {a: [p[ka] for p in batch["translation"]],
                            b: [p[kb] for p in batch["translation"]]},
             batched=True, remove_columns=cols)
-    elif ka in cols and kb in cols:                            # flat columns: "en", "sw"
+    elif ka in cols and kb in cols:                                   # flat columns: "en", "sw"
         ds = ds.select_columns([ka, kb])
         rename = {k: v for k, v in ((ka, a), (kb, b)) if k != v}
         if rename:
             ds = ds.rename_columns(rename)
     else:
-        raise ValueError(f"{source.name}: need a 'translation' column or columns "
-                         f"'{ka}' and '{kb}', found {cols}.")
+        raise ValueError(f"{source.name}: need a 'translation' column or columns '{ka}' and '{kb}', "
+                         f"found {cols}. Set column_codes / adjust _load_pair.")
+    # drop missing or empty strings so tokenization cannot crash later
     return ds.filter(lambda ex: isinstance(ex[a], str) and isinstance(ex[b], str)
                      and ex[a].strip() != "" and ex[b].strip() != "")
+
 
 # ----------------------------------------------------------------------------- cleaning
 def clean_pairs(ds: Dataset, a: str, b: str, tokenizer, cfg: Config, lid: Optional[LangID]) -> Dataset:
@@ -216,6 +218,8 @@ def prepare_data(cfg: Config, tokenizer, use_cache: bool = True, blocked: Option
     """Build (or load from disk) the tokenized train/val sets. The cache key covers the data config,
     so changing sizes, sources or cleaning rebuilds automatically."""
     key = hashlib.md5(json.dumps(asdict(cfg.data), sort_keys=True).encode()).hexdigest()[:8]
+    if blocked:
+        key += f"-b{len(blocked)}"          # a different blocklist must not reuse an old cache
     cache = Path(WORK_DIR) / "data_cache" / key
     if use_cache and (cache / "train").exists() and (cache / "val").exists():
         print(f"Loading cached data from {cache}")

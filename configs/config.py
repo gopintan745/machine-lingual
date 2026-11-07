@@ -49,7 +49,7 @@ class Source:
     pairs: List[str]                                            # e.g. ["en-fr"]; order does not matter
     configs: Dict[str, str] = field(default_factory=dict)       # canonical pair -> Hub config name
     column_codes: Dict[str, str] = field(default_factory=dict)  # short code -> key in "translation"
-    revision: Optional[str] = None
+    revision: Optional[str] = None                              # e.g. "refs/convert/parquet" for script-based datasets
 
 
 @dataclass
@@ -130,7 +130,6 @@ class TrainingConfig:
     per_device_batch_size: int = 8
     grad_accum_steps: int = 4
     learning_rate: float = 2.0e-4
-    num_train_epochs: int = 3
     weight_decay: float = 0.01
     warmup_ratio: float = 0.05
     logging_steps: int = 50
@@ -168,6 +167,57 @@ class HubConfig:
     private: bool = False
 
 
+# ----------------------------------------------------------------------------- evaluation
+@dataclass
+class EvalSystem:
+    name: str
+    base: str                          # Hub ID of the base model
+    adapter: Optional[str] = None      # LoRA adapter dir or Hub ID (merged into base for inference)
+
+
+@dataclass
+class TestSet:
+    kind: str = "per_language"         # "per_language" | "wide" | "files"
+    hub_id: Optional[str] = None       # per_language / wide
+    config: Optional[str] = None       # wide: Hub config name, if the dataset has one
+    split: str = "devtest"
+    text_column: str = "text"          # per_language: column holding the sentence
+    columns: Dict[str, str] = field(default_factory=dict)   # wide: short code -> column name
+    path: Optional[str] = None         # files: directory with one line-aligned file per language
+    file_pattern: str = "{nllb}.{split}"                      # files: e.g. eng_Latn.devtest
+
+
+@dataclass
+class EvalGeneration:
+    num_beams: int = 4
+    max_new_tokens: int = 128
+    batch_size: int = 32
+
+
+@dataclass
+class ChrfSettings:
+    word_order: int = 2                # 2 = chrF++
+
+
+@dataclass
+class JudgeSettings:
+    enabled: bool = False              # judge itself is not implemented yet
+    samples_per_direction: int = 100   # rows written to judge_inputs.jsonl
+
+
+@dataclass
+class EvalConfig:
+    seed: int = 42
+    output_dir: str = "results"
+    baseline: str = "baseline"         # system the others are compared against
+    systems: List[EvalSystem] = field(default_factory=list)
+    test_set: TestSet = field(default_factory=TestSet)
+    generation: EvalGeneration = field(default_factory=EvalGeneration)
+    chrf: ChrfSettings = field(default_factory=ChrfSettings)
+    bootstrap_resamples: int = 2000
+    llm_judge: JudgeSettings = field(default_factory=JudgeSettings)
+
+
 @dataclass
 class Config:
     data: DataConfig = field(default_factory=DataConfig)
@@ -177,7 +227,7 @@ class Config:
     generation: GenerationConfig = field(default_factory=GenerationConfig)
     hpo: HPOConfig = field(default_factory=HPOConfig)
     hub: HubConfig = field(default_factory=HubConfig)
-    eval: Dict[str, Any] = field(default_factory=dict)   # typed once the eval harness exists
+    eval: EvalConfig = field(default_factory=EvalConfig)
 
     def copy(self) -> "Config":
         return copy.deepcopy(self)
@@ -217,6 +267,12 @@ def load_config(yaml_path: Optional[str | Path] = None) -> Config:
     cfg.training.output_dir = resolve(cfg.training.output_dir)
     cfg.hpo.storage_path = resolve(cfg.hpo.storage_path)
     cfg.data.cleaning.langid.model_path = resolve(cfg.data.cleaning.langid.model_path)
+    cfg.eval.output_dir = resolve(cfg.eval.output_dir)
+    for system in cfg.eval.systems:            # a local adapter dir is resolved; a Hub ID is left alone
+        if system.adapter and Path(resolve(system.adapter)).exists():
+            system.adapter = resolve(system.adapter)
+    if cfg.eval.test_set.path:
+        cfg.eval.test_set.path = resolve(cfg.eval.test_set.path)
     Path(cfg.hpo.storage_path).parent.mkdir(parents=True, exist_ok=True)
     Path(cfg.training.output_dir).mkdir(parents=True, exist_ok=True)
 
