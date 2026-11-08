@@ -65,7 +65,10 @@ class LangID:
     enabled: bool = True
     model_path: str = "lid.176.bin"
     min_confidence: float = 0.5
-    per_language: Dict[str, float] = field(default_factory=dict)  
+    per_language: Dict[str, float] = field(default_factory=dict)   # min confidence overrides, e.g. {sw: 0.2}
+    # Also keep a row that fastText labels as ANOTHER language when that label's confidence is below
+    # this value (low-confidence misreads of valid text). 0.0 (default) = strict: such rows are dropped.
+    reject_confidence: Dict[str, float] = field(default_factory=dict)   # e.g. {sw: 0.5}
 
 
 @dataclass
@@ -74,6 +77,8 @@ class Cleaning:
     length_ratio: List[float] = field(default_factory=lambda: [0.5, 2.0])
     min_tokens: int = 3
     max_tokens: int = 128
+    drop_identical: bool = True                                   # source == target (untranslated copies)
+    drop_regex: List[str] = field(default_factory=list)           # drop a pair if either side matches
     langid: LangID = field(default_factory=LangID)
 
 

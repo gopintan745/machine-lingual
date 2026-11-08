@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import urllib.request
 from dataclasses import asdict
 from pathlib import Path
@@ -51,8 +52,11 @@ class LangID:
                 out.append((lab.replace("__label__", ""), float(prob)))
             return out
 
-    def check(self, texts: list[str], label: str, min_conf: float) -> list[bool]:
-        return [lab == label and prob >= min_conf for lab, prob in self.predict(texts)]
+    def check(self, texts: list[str], label: str, min_conf: float, reject_conf: float = 0.0) -> list[bool]:
+        """Keep if fastText says `label` with confidence >= min_conf, or says ANOTHER language with
+        confidence < reject_conf (a weak misread). Only a confident wrong language drops the row."""
+        return [(lab == label and prob >= min_conf) or (lab != label and prob < reject_conf)
+                for lab, prob in self.predict(texts)]
 
 
 # ----------------------------------------------------------------------------- loading
@@ -114,12 +118,27 @@ def clean_pairs(ds: Dataset, a: str, b: str, tokenizer, cfg: Config, lid: Option
 
     ds = ds.filter(keep_length, batched=True, desc="length filter")
 
+    rxs = [re.compile(pattern) for pattern in c.drop_regex]
+    if rxs or c.drop_identical:
+        def keep_text(batch):
+            keep = []
+            for x, y in zip(batch[a], batch[b]):
+                same = c.drop_identical and x.strip().lower() == y.strip().lower()
+                markup = any(rx.search(x) or rx.search(y) for rx in rxs)
+                keep.append(not (same or markup))
+            return keep
+
+        ds = ds.filter(keep_text, batched=True, desc="text filter")
+
     if lid is not None and c.langid.enabled:
         fa, fb = cfg.data.languages[a].fasttext, cfg.data.languages[b].fasttext
         ta = c.langid.per_language.get(a, c.langid.min_confidence)
         tb = c.langid.per_language.get(b, c.langid.min_confidence)
+        ra = c.langid.reject_confidence.get(a, 0.0)
+        rb = c.langid.reject_confidence.get(b, 0.0)
         ds = ds.filter(
-            lambda batch: [x and y for x, y in zip(lid.check(batch[a], fa, ta), lid.check(batch[b], fb, tb))],
+            lambda batch: [x and y for x, y in zip(lid.check(batch[a], fa, ta, ra),
+                                                   lid.check(batch[b], fb, tb, rb))],
             batched=True, desc="language-ID filter")
     return ds
 

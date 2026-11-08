@@ -39,11 +39,19 @@ data:
     length_ratio: [0.5, 2.0]       # starting values, tune after inspecting dropped pairs
     min_tokens: 3
     max_tokens: 128
+    drop_identical: true           # untranslated copies (source == target)
+    drop_regex:                    # markup / URLs / template strings seen in the Swahili sources
+      - 'https?://'
+      - '\]\('
+      - '<[^>]+>'
+      - '\{\{|\}\}'
     langid:
       enabled: true
       model_path: lid.176.bin      # downloaded once if missing (needs internet)
       min_confidence: 0.5
-      per_language: {}
+      per_language: {sw: 0.2}      # Swahili: accept a "sw" label down to 0.2 (below that looks ungrammatical)
+      reject_confidence: {sw: 0.7} # Swahili: only a CONFIDENT other language (>= 0.7) drops a row
+      # starting values from two sources (~6 examples per band): re-check with scripts.inspect_langid
 
   tokenizer:
     max_length: 128
@@ -64,7 +72,6 @@ training:
   epochs: 2
   per_device_batch_size: 8
   grad_accum_steps: 4
-  num_train_epochs: 3
   learning_rate: 2.0e-4
   weight_decay: 0.01
   warmup_ratio: 0.05
