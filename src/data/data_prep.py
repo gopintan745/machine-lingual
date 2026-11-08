@@ -111,7 +111,24 @@ def _load_pair(source, a: str, b: str, seed: int, pool: int) -> Optional[Dataset
 
 
 # ----------------------------------------------------------------------------- cleaning
-def clean_pairs(ds: Dataset, a: str, b: str, tokenizer, cfg: Config, lid: Optional[LangID]) -> Dataset:
+def _langid_settings(cfg: Config, source) -> tuple:
+    """Effective language-ID settings for one source: global values, then the source's overrides."""
+    base = cfg.data.cleaning.langid
+    enabled, default = base.enabled, base.min_confidence
+    per, rej = dict(base.per_language), dict(base.reject_confidence)
+    ov = getattr(source, "langid", None)
+    if ov is not None:
+        if ov.enabled is not None:
+            enabled = ov.enabled
+        if ov.min_confidence is not None:
+            default = ov.min_confidence
+        per.update(ov.per_language or {})
+        rej.update(ov.reject_confidence or {})
+    return enabled, default, per, rej
+
+
+def clean_pairs(ds: Dataset, a: str, b: str, tokenizer, cfg: Config, lid: Optional[LangID],
+                source=None) -> Dataset:
     c = cfg.data.cleaning
     assert c.min_tokens >= 1, "min_tokens must be >= 1 (division by zero in the ratio filter)"
     r_lo, r_hi = c.length_ratio
@@ -136,12 +153,11 @@ def clean_pairs(ds: Dataset, a: str, b: str, tokenizer, cfg: Config, lid: Option
 
         ds = ds.filter(keep_text, batched=True, desc="text filter")
 
-    if lid is not None and c.langid.enabled:
+    enabled, default, per, rej = _langid_settings(cfg, source)
+    if lid is not None and enabled:
         fa, fb = cfg.data.languages[a].fasttext, cfg.data.languages[b].fasttext
-        ta = c.langid.per_language.get(a, c.langid.min_confidence)
-        tb = c.langid.per_language.get(b, c.langid.min_confidence)
-        ra = c.langid.reject_confidence.get(a, 0.0)
-        rb = c.langid.reject_confidence.get(b, 0.0)
+        ta, tb = per.get(a, default), per.get(b, default)
+        ra, rb = rej.get(a, 0.0), rej.get(b, 0.0)
         ds = ds.filter(
             lambda batch: [x and y for x, y in zip(lid.check(batch[a], fa, ta, ra),
                                                    lid.check(batch[b], fb, tb, rb))],
@@ -204,7 +220,9 @@ def build_datasets(cfg: Config, tokenizer, blocked: Optional[set] = None):
     check_language_tokens(tokenizer, cfg)
     sz = cfg.data.sizes
     pool = sz.pool_factor * (sz.train_per_direction + sz.val_per_direction)
-    lid = LangID(cfg.data.cleaning.langid.model_path) if cfg.data.cleaning.langid.enabled else None
+    need_lid = cfg.data.cleaning.langid.enabled or any(
+        s.langid is not None and s.langid.enabled for s in cfg.data.sources)
+    lid = LangID(cfg.data.cleaning.langid.model_path) if need_lid else None
 
     train_parts, val_parts, report = [], [], {}
     for a, b in cfg.data.pairs():
@@ -215,7 +233,7 @@ def build_datasets(cfg: Config, tokenizer, blocked: Optional[set] = None):
             ds = _load_pair(source, a, b, cfg.data.seed, pool)
             if ds is None:
                 continue
-            ds = clean_pairs(ds, a, b, tokenizer, cfg, lid)
+            ds = clean_pairs(ds, a, b, tokenizer, cfg, lid, source)
             print(f"{source.name:16s} {a}-{b}: {len(ds):>7d} pairs after cleaning")
             pieces.append(ds)
         if not pieces:

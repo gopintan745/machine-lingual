@@ -13,7 +13,8 @@ import copy
 import os
 from dataclasses import dataclass, field, fields, is_dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, get_args, get_origin, get_type_hints
+import types
+from typing import Any, Dict, List, Optional, Union, get_args, get_origin, get_type_hints
 
 import yaml
 
@@ -43,12 +44,22 @@ class Language:
 
 
 @dataclass
+class LangIDOverride:
+    """Per-source language-ID settings. Unset (None) fields inherit cleaning.langid."""
+    enabled: Optional[bool] = None
+    min_confidence: Optional[float] = None
+    per_language: Optional[Dict[str, float]] = None
+    reject_confidence: Optional[Dict[str, float]] = None
+
+
+@dataclass
 class Source:
     name: str
     pairs: List[str]                                            # e.g. ["en-fr"]; order does not matter
     hub_id: Optional[str] = None                                # Hub dataset ID ...
     data_file: Optional[str] = None                             # ... OR a JSON-lines file/URL (train split)
     max_rows: Optional[int] = None                              # cap on rows pooled from this source per pair
+    langid: Optional[LangIDOverride] = None                     # stricter/looser language ID for this source
     configs: Dict[str, str] = field(default_factory=dict)       # canonical pair -> Hub config name
     column_codes: Dict[str, str] = field(default_factory=dict)  # short code -> key in "translation"
     revision: Optional[str] = None                              # e.g. "refs/convert/parquet" for script-based datasets
@@ -245,6 +256,10 @@ class Config:
 # ----------------------------------------------------------------------------- loader
 def _convert(tp: Any, value: Any, path: str) -> Any:
     origin, args = get_origin(tp), get_args(tp)
+    if origin in (Union, getattr(types, "UnionType", Union)):          # Optional[X]
+        inner = [a for a in args if a is not type(None)]
+        if len(inner) == 1:
+            return None if value is None else _convert(inner[0], value, path)
     if is_dataclass(tp):
         return _build(tp, value, path)
     if origin is list and args:

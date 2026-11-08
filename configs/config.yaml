@@ -13,21 +13,26 @@ data:
   sources:
     - name: opus-100
       hub_id: Helsinki-NLP/opus-100
-      pairs: [en-fr, en-ar]
+      pairs: [en-fr, en-ar, en-sw]
     - name: news-commentary
       hub_id: Helsinki-NLP/news_commentary
       pairs: [en-fr, en-ar]
-    - name: nllb-en-sw-20k         # flat columns en/sw, single "default" config, 20k rows
-      hub_id: ArmelRandy/nllb_en_sw_20K
-      pairs: [en-sw]
-      configs: {en-sw: default}
     - name: mafand-mt             # NEWS domain (train = Global Voices); ~30.8k rows; CC BY-NC 4.0
       data_file: https://raw.githubusercontent.com/masakhane-io/lafand-mt/main/data/json_files/en-swa/train.json
       pairs: [en-sw]
       column_codes: {sw: swa}
-    - name: en-sw-processed        # VERIFY THE EXACT HUB ID before enabling (could not be found)
+      langid:                      # human-translated news: all 21 sampled rows below 0.2 were fluent Swahili
+        per_language: {sw: 0.0}    # accept a "sw" label at any confidence
+        reject_confidence: {sw: 0.7}
+    - name: nllb-en-sw-20k         # general/religious/noisy: capped so news text dominates the Swahili mix
+      hub_id: ArmelRandy/nllb_en_sw_20K
+      pairs: [en-sw]
+      configs: {en-sw: default}
+      max_rows: 6000
+    - name: en-sw-processed        # subtitles / UI strings / Quran / mixed: capped
       hub_id: amaniopia/en-sw-processed
       pairs: [en-sw]
+      max_rows: 6000
     # - name: tatoeba              # unverified: check config names and schema before enabling
     #   hub_id: Helsinki-NLP/tatoeba
     #   pairs: [en-fr, en-ar, en-sw]
