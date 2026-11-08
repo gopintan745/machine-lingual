@@ -43,6 +43,7 @@ data:
       enabled: true
       model_path: lid.176.bin      # downloaded once if missing (needs internet)
       min_confidence: 0.5
+      per_language: {}
 
   tokenizer:
     max_length: 128

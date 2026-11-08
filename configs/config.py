@@ -65,6 +65,7 @@ class LangID:
     enabled: bool = True
     model_path: str = "lid.176.bin"
     min_confidence: float = 0.5
+    per_language: Dict[str, float] = field(default_factory=dict)  
 
 
 @dataclass

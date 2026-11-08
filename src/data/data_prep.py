@@ -35,20 +35,24 @@ class LangID:
             urllib.request.urlretrieve(LID_URL, p)
         self.model = fasttext.load_model(str(p))
 
-    def check(self, texts: list[str], label: str, min_conf: float) -> list[bool]:
+    def predict(self, texts: list[str]) -> list[tuple[str, float]]:
+        """Top-1 (short language code, confidence) per text."""
         texts = [" ".join(t.split()) for t in texts]          # no newlines, collapsed whitespace
-        want = f"__label__{label}"
         try:
             labels, probs = self.model.predict(texts, k=1)
-            return [l[0] == want and float(p[0]) >= min_conf for l, p in zip(labels, probs)]
+            return [((l[0] if l else "").replace("__label__", ""), float(p[0]) if len(p) else 0.0)
+                    for l, p in zip(labels, probs)]
         except ValueError:
             # Some fastText builds break on NumPy 2 inside predict(); use the raw binding.
             out = []
             for t in texts:
                 res = self.model.f.predict(t + "\n", 1, 0.0, "strict")
                 prob, lab = res[0] if res else (0.0, "")
-                out.append(lab == want and prob >= min_conf)
+                out.append((lab.replace("__label__", ""), float(prob)))
             return out
+
+    def check(self, texts: list[str], label: str, min_conf: float) -> list[bool]:
+        return [lab == label and prob >= min_conf for lab, prob in self.predict(texts)]
 
 
 # ----------------------------------------------------------------------------- loading
@@ -112,9 +116,10 @@ def clean_pairs(ds: Dataset, a: str, b: str, tokenizer, cfg: Config, lid: Option
 
     if lid is not None and c.langid.enabled:
         fa, fb = cfg.data.languages[a].fasttext, cfg.data.languages[b].fasttext
+        ta = c.langid.per_language.get(a, c.langid.min_confidence)
+        tb = c.langid.per_language.get(b, c.langid.min_confidence)
         ds = ds.filter(
-            lambda batch: [x and y for x, y in zip(lid.check(batch[a], fa, c.langid.min_confidence),
-                                                   lid.check(batch[b], fb, c.langid.min_confidence))],
+            lambda batch: [x and y for x, y in zip(lid.check(batch[a], fa, ta), lid.check(batch[b], fb, tb))],
             batched=True, desc="language-ID filter")
     return ds
 
