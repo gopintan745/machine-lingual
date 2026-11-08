@@ -13,7 +13,7 @@ data:
   sources:
     - name: opus-100
       hub_id: Helsinki-NLP/opus-100
-      pairs: [en-fr, en-ar, en-sw]
+      pairs: [en-fr, en-ar]
     - name: news-commentary
       hub_id: Helsinki-NLP/news_commentary
       pairs: [en-fr, en-ar]
