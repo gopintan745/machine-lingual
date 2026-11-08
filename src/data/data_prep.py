@@ -74,10 +74,16 @@ def _load_pair(source, a: str, b: str, seed: int, pool: int) -> Optional[Dataset
         names = [source.configs[rev]]
     else:                                   # try both orders; datasets differ on which they use
         names = [f"{ka}-{kb}", f"{kb}-{ka}", None]   # None = the dataset's only/default config
+    if source.data_file:
+        names = ["<json file>"]
+    pool = min(pool, source.max_rows) if source.max_rows else pool
     ds, last_err = None, None
     for name in names:
         try:
-            ds = load_dataset(source.hub_id, name, split="train", revision=source.revision)
+            if source.data_file:            # JSON lines, e.g. {"translation": {"en": ..., "swa": ...}}
+                ds = load_dataset("json", data_files={"train": source.data_file}, split="train")
+            else:
+                ds = load_dataset(source.hub_id, name, split="train", revision=source.revision)
             break
         except Exception as e:               # keep the reason; print it if every candidate fails
             last_err = e

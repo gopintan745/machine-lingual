@@ -21,6 +21,10 @@ data:
       hub_id: ArmelRandy/nllb_en_sw_20K
       pairs: [en-sw]
       configs: {en-sw: default}
+    - name: mafand-mt             # NEWS domain (train = Global Voices); ~30.8k rows; CC BY-NC 4.0
+      data_file: https://raw.githubusercontent.com/masakhane-io/lafand-mt/main/data/json_files/en-swa/train.json
+      pairs: [en-sw]
+      column_codes: {sw: swa}
     - name: en-sw-processed        # VERIFY THE EXACT HUB ID before enabling (could not be found)
       hub_id: amaniopia/en-sw-processed
       pairs: [en-sw]

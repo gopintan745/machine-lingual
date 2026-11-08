@@ -45,8 +45,10 @@ class Language:
 @dataclass
 class Source:
     name: str
-    hub_id: str
     pairs: List[str]                                            # e.g. ["en-fr"]; order does not matter
+    hub_id: Optional[str] = None                                # Hub dataset ID ...
+    data_file: Optional[str] = None                             # ... OR a JSON-lines file/URL (train split)
+    max_rows: Optional[int] = None                              # cap on rows pooled from this source per pair
     configs: Dict[str, str] = field(default_factory=dict)       # canonical pair -> Hub config name
     column_codes: Dict[str, str] = field(default_factory=dict)  # short code -> key in "translation"
     revision: Optional[str] = None                              # e.g. "refs/convert/parquet" for script-based datasets
@@ -282,6 +284,10 @@ def load_config(yaml_path: Optional[str | Path] = None) -> Config:
         cfg.eval.test_set.path = resolve(cfg.eval.test_set.path)
     Path(cfg.hpo.storage_path).parent.mkdir(parents=True, exist_ok=True)
     Path(cfg.training.output_dir).mkdir(parents=True, exist_ok=True)
+
+    for src in cfg.data.sources:
+        if bool(src.hub_id) == bool(src.data_file):
+            raise ValueError(f"Source '{src.name}': set exactly one of hub_id or data_file")
 
     # fail early on typos in direction / language names
     for d in cfg.data.directions:
