@@ -22,9 +22,11 @@ class PruneCallback(TrainerCallback):
 
     def __init__(self, trial: optuna.Trial):
         self.trial = trial
+        self.last_step = -1          # trainer.evaluate() after training re-fires at the same step
 
     def on_evaluate(self, args, state, control, metrics=None, **kwargs):
-        if metrics and "eval_loss" in metrics:
+        if metrics and "eval_loss" in metrics and state.global_step > self.last_step:
+            self.last_step = state.global_step
             self.trial.report(metrics["eval_loss"], state.global_step)
             if self.trial.should_prune():
                 raise optuna.TrialPruned()
@@ -73,7 +75,7 @@ def objective(trial: optuna.Trial, base_cfg: Config, train_ds, val_ds, tokenizer
         torch.cuda.empty_cache()
 
 
-def run_hyperparameter_search(cfg: Config, train_ds, val_ds, tokenizer) -> optuna.Study:
+def run_hyperparameter_search(cfg: Config, train_ds, val_ds, tokenizer, on_trial_end=None) -> optuna.Study:
     study = optuna.create_study(
         study_name=cfg.hpo.study_name,
         storage=cfg.hpo.storage,
@@ -90,6 +92,7 @@ def run_hyperparameter_search(cfg: Config, train_ds, val_ds, tokenizer) -> optun
             lambda trial: objective(trial, cfg, train_ds, val_ds, tokenizer),
             n_trials=remaining,
             catch=(torch.cuda.OutOfMemoryError,),           # an OOM trial is marked failed, search continues
+            callbacks=[lambda study_, trial_: on_trial_end(study_, trial_)] if on_trial_end else None,
         )
 
     completed = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]

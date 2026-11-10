@@ -185,6 +185,8 @@ class HPOConfig:
 class HubConfig:
     repo_id: str = "user/nllb-600M-lora"
     private: bool = False
+    enabled: bool = False              # normally switched on with `scripts.train --push`
+    push_checkpoints_every: int = 3    # upload the latest checkpoint every N saves (0 = never)
 
 
 # ----------------------------------------------------------------------------- evaluation

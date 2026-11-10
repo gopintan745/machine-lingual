@@ -21,6 +21,7 @@ from transformers import AutoTokenizer
 
 from configs.config import load_config
 from src.data.data_prep import prepare_data
+from src.training import hub
 from src.training.hpo import run_hyperparameter_search
 from src.training.train_full import full_training
 
@@ -46,6 +47,8 @@ def main():
     ap.add_argument("--stage", choices=["data", "hpo", "train", "all"], default="all")
     ap.add_argument("--smoke", action="store_true", help="tiny run to validate the whole pipeline")
     ap.add_argument("--no-cache", action="store_true", help="rebuild the tokenized datasets")
+    ap.add_argument("--push", action="store_true",
+                    help="back up HPO state/checkpoints to the Hub and publish the final adapter (needs HF_TOKEN)")
     ap.add_argument("--decontaminate", action="store_true",
                     help="drop training pairs that contain a test-set sentence (loads eval.test_set)")
     args = ap.parse_args()
@@ -53,6 +56,11 @@ def main():
     cfg = load_config(args.config)
     if args.smoke:
         cfg = apply_smoke(cfg)
+    if args.push:
+        if args.smoke:
+            raise SystemExit("--push is not allowed with --smoke: it would overwrite real results in the repo.")
+        cfg.hub.enabled = True
+        hub.check_hub_ready(cfg)                              # fail now, not after hours of training
 
     tokenizer = AutoTokenizer.from_pretrained(cfg.model.base, cache_dir=cfg.model.cache_dir)
     blocked = None
@@ -66,9 +74,17 @@ def main():
         return
 
     if args.stage in ("hpo", "all"):
-        run_hyperparameter_search(cfg, train_ds, val_ds, tokenizer)
+        on_trial_end = None
+        if cfg.hub.enabled:
+            hub.restore_hpo(cfg)                              # resume the study from a previous session
+            on_trial_end = lambda study, trial: hub.push_hpo_state(cfg)
+        run_hyperparameter_search(cfg, train_ds, val_ds, tokenizer, on_trial_end=on_trial_end)
+        if cfg.hub.enabled:
+            hub.push_hpo_state(cfg)
     if args.stage in ("train", "all"):
-        full_training(train_ds, val_ds, tokenizer, cfg)
+        if cfg.hub.enabled:
+            hub.restore_hpo(cfg)                              # needed by full_training in a fresh session
+        full_training(cfg, train_ds, val_ds, tokenizer)
 
 
 if __name__ == "__main__":
