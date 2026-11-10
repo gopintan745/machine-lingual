@@ -137,16 +137,16 @@ eval:
   chrf: {word_order: 2}
   bootstrap_resamples: 2000
   llm_judge:
-    provider: openai_compatible            # "anthropic" | "openai_compatible"
-    model: ""                      # REQUIRED: the exact model name your provider documents
-    base_url: null                 # openai_compatible only, e.g. https://<provider>/v1
-    api_key_env: JUDGE_API_KEY     # env var or Kaggle secret that holds the key
-    mode: pointwise                # pointwise | pairwise | both
-    use_reference: false           # reference-free by default (avoids anchoring on the FLORES reference)
+    provider: openai_compatible     # "anthropic" | "openai_compatible"
+    model: "gemini-3.5-flash-lite"  # REQUIRED: the exact model name your provider documents
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai/  # openai_compatible only, e.g. https://<provider>/v1
+    api_key_env: JUDGE_API_KEY      # env var or Kaggle secret that holds the key
+    mode: pointwise                 # pointwise | pairwise | both
+    use_reference: false            # reference-free by default (avoids anchoring on the FLORES reference)
     samples_per_direction: 100
-    temperature: 0.0               # null = do not send
+    temperature: 0.0                # null = do not send
     max_tokens: 300
-    requests_per_minute: 20        # check your provider's CURRENT free-tier limit
+    requests_per_minute: 20         # check your provider's CURRENT free-tier limit
     max_retries: 4
     timeout_s: 60
     prompt_version: v1
