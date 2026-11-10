@@ -223,8 +223,23 @@ class ChrfSettings:
 
 @dataclass
 class JudgeSettings:
-    enabled: bool = False              # judge itself is not implemented yet
-    samples_per_direction: int = 100   # rows written to judge_inputs.jsonl
+    provider: str = "anthropic"          # "anthropic" | "openai_compatible"
+    model: str = ""                      # REQUIRED: exact model name from your provider
+    base_url: Optional[str] = None       # openai_compatible only, e.g. https://<provider>/v1
+    api_key_env: str = "JUDGE_API_KEY"   # environment variable or Kaggle secret holding the key
+    mode: str = "pointwise"              # "pointwise" | "pairwise" | "both"
+    use_reference: bool = False          # show the reference to the judge (changes scores: new cache keys)
+    samples_per_direction: int = 100     # rows written to judge_inputs.jsonl and judged
+    temperature: Optional[float] = 0.0   # null = do not send (some models reject it)
+    max_tokens: int = 300
+    max_tokens_param: str = "max_tokens"  # openai_compatible: some models need "max_completion_tokens"
+    requests_per_minute: int = 20        # stay under your provider's free-tier limit (0 = no limit)
+    max_retries: int = 4
+    timeout_s: int = 60
+    prompt_version: str = "v1"           # bump when you edit the prompts
+    cache_dir: str = "judge_cache"       # relative -> under WORK_DIR
+    human_check_per_language: int = 30
+    human_check_languages: List[str] = field(default_factory=lambda: ["fr", "ar", "sw"])
 
 
 @dataclass
@@ -294,6 +309,7 @@ def load_config(yaml_path: Optional[str | Path] = None) -> Config:
     cfg.hpo.storage_path = resolve(cfg.hpo.storage_path)
     cfg.data.cleaning.langid.model_path = resolve(cfg.data.cleaning.langid.model_path)
     cfg.eval.output_dir = resolve(cfg.eval.output_dir)
+    cfg.eval.llm_judge.cache_dir = resolve(cfg.eval.llm_judge.cache_dir)
     for system in cfg.eval.systems:            # a local adapter dir is resolved; a Hub ID is left alone
         if system.adapter and Path(resolve(system.adapter)).exists():
             system.adapter = resolve(system.adapter)
