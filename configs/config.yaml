@@ -68,7 +68,7 @@ data:
 model:
   base: facebook/nllb-200-distilled-600M
   cache_dir: null
-  max_length: 128
+  max_length: 256                  # INPUT limit when translating (eval/app); training uses data.tokenizer.max_length
 
 lora:
   r: 16
@@ -131,7 +131,7 @@ eval:
     # kind: files                  # line-aligned local files, e.g. flores200_dataset/devtest/eng_Latn.devtest
     # path: /kaggle/input/flores200/devtest
     # file_pattern: "{nllb}.{split}"
-  generation: {num_beams: 4, max_new_tokens: 128, batch_size: 32}
+  generation: {num_beams: 4, max_new_tokens: 256, batch_size: 32}   # Arabic output is ~1.8x longer in tokens
   chrf: {word_order: 2}
   bootstrap_resamples: 2000
   llm_judge: {enabled: false, samples_per_direction: 100}

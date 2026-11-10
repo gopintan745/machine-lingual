@@ -14,6 +14,7 @@ from peft import PeftModel
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 from configs.config import Config, EvalSystem
+from src.eval.gen_utils import capped_rows
 
 Translator = Callable[[List[str], str, str], Tuple[List[str], dict]]
 
@@ -43,17 +44,20 @@ def _make_translate(model, tok, device: str, cfg: Config) -> Translator:
                 half = len(idx) // 2                      # retry with smaller batches
                 return run(idx[:half]) + run(idx[half:])
             texts = tok.batch_decode(gen, skip_special_tokens=True)
-            return list(zip(idx, texts, truncated))
+            capped = capped_rows(gen.tolist(), tok.eos_token_id, g.max_new_tokens)
+            return list(zip(idx, texts, truncated, capped))
 
         out = [""] * len(sources)
         n_truncated = 0
+        n_capped = 0
         nonempty = [i for i, s in enumerate(sources) if s.strip()]
         order = sorted(nonempty, key=lambda i: len(sources[i]), reverse=True)   # similar lengths per batch
         for start in range(0, len(order), g.batch_size):
-            for i, text, was_truncated in run(order[start:start + g.batch_size]):
+            for i, text, was_truncated, was_capped in run(order[start:start + g.batch_size]):
                 out[i] = text
                 n_truncated += int(was_truncated)
-        return out, {"truncated_inputs": n_truncated}
+                n_capped += int(was_capped)
+        return out, {"truncated_inputs": n_truncated, "capped_outputs": n_capped}
 
     return translate
 

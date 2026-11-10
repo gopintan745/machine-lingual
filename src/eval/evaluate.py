@@ -106,14 +106,16 @@ def run_evaluation(
 
     hyps: Dict[str, Dict[str, List[str]]] = {}
     truncated: Dict[str, Dict[str, int]] = {}
+    capped: Dict[str, Dict[str, int]] = {}
     for system in selected:
-        hyps[system.name], truncated[system.name] = {}, {}
+        hyps[system.name], truncated[system.name], capped[system.name] = {}, {}, {}
         todo = []
         for d in directions:
             cached = None if force else _read_cache(out, system.name, d, test_sets[d][0])
             if cached:
                 hyps[system.name][d] = cached["hypotheses"]
                 truncated[system.name][d] = cached.get("truncated_inputs", 0)
+                capped[system.name][d] = cached.get("capped_outputs", 0)
             else:
                 todo.append(d)
         if not todo:
@@ -127,12 +129,15 @@ def run_evaluation(
                 hyp, stats = translate(sources, src, tgt)
                 hyps[system.name][d] = hyp
                 truncated[system.name][d] = stats.get("truncated_inputs", 0)
+                capped[system.name][d] = stats.get("capped_outputs", 0)
                 _cache_file(out, system.name, d).write_text(json.dumps({
                     "system": system.name, "direction": d, "source_digest": _digest(sources),
-                    "truncated_inputs": truncated[system.name][d], "hypotheses": hyp}, ensure_ascii=False),
+                    "truncated_inputs": truncated[system.name][d], "capped_outputs": capped[system.name][d],
+                    "hypotheses": hyp}, ensure_ascii=False),
                     encoding="utf-8")
                 print(f"[{system.name}] {d}: {len(sources)} sentences in {time() - t0:.0f}s "
-                      f"(truncated inputs: {truncated[system.name][d]})")
+                      f"(truncated inputs: {truncated[system.name][d]}, "
+                      f"outputs cut at max_new_tokens: {capped[system.name][d]})")
         translate = None                    # drop the last reference to the model, then free GPU memory
         _free_gpu()
 
@@ -151,7 +156,8 @@ def run_evaluation(
             sent[name][d] = scores
             results[name][d] = {"n": len(refs), "chrf": corpus["score"],
                                 "chrf_sentence_mean": float(scores.mean()),
-                                "truncated_inputs": truncated[name][d]}
+                                "truncated_inputs": truncated[name][d],
+                                "capped_outputs": capped[name][d]}
 
     comparisons: Dict[str, Dict[str, dict]] = {}
     if ev.baseline in names:
