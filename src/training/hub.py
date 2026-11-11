@@ -29,7 +29,7 @@ from configs.config import Config
 
 # ----------------------------------------------------------------------------- access
 def get_token() -> Optional[str]:
-    for name in ("HF_TOKEN", "HUGGINGFACE_HUB_TOKEN"):
+    for name in ("HF_TOKEN", "HF_ACCESS_TOKEN", "HUGGINGFACE_HUB_TOKEN"):
         if os.getenv(name):
             return os.getenv(name)
     try:                                                   # Kaggle Secrets (Add-ons -> Secrets -> HF_TOKEN)
