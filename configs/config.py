@@ -26,6 +26,7 @@ except ImportError:
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 WORK_DIR = Path(os.getenv("WORK_DIR", PROJECT_ROOT / "outputs"))
+HF_USERNAME = os.getenv("HF_USERNAME") or os.getenv("HF_USER") or os.getenv("HF_USER_NAME")
 
 
 def resolve(path: str) -> str:
@@ -183,7 +184,7 @@ class HPOConfig:
 
 @dataclass
 class HubConfig:
-    repo_id: str = "user/nllb-600M-lora"
+    repo_id: str = f"{HF_USERNAME}/nllb-600M-lora"
     private: bool = False
     enabled: bool = False              # normally switched on with `scripts.train --push`
     push_checkpoints_every: int = 3    # upload the latest checkpoint every N saves (0 = never)
