@@ -34,7 +34,7 @@ def get_token() -> Optional[str]:
             return os.getenv(name)
     try:                                                   # Kaggle Secrets (Add-ons -> Secrets -> HF_TOKEN)
         from kaggle_secrets import UserSecretsClient  # type: ignore
-        return UserSecretsClient().get_secret("HF_TOKEN")
+        return UserSecretsClient().get_secret("HF_ACCESS_TOKEN")
     except Exception:
         return None
 
