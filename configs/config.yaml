@@ -109,7 +109,7 @@ hpo:
     warmup_ratio: {low: 0.0, high: 0.1}
 
 hub:
-  repo_id: ${HF_USERNAME}/nllb-600M-lora   # needs HF_USERNAME in the environment
+  repo_id: RousingSea7309/nllb-600M-lora   # needs HF_USERNAME in the environment
   private: false
   enabled: false                   # use `python -m scripts.train --push` instead of editing this
   push_checkpoints_every: 3        # every 3 saves = every 1500 steps with save_steps: 500
