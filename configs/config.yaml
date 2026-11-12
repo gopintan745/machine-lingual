@@ -146,7 +146,7 @@ eval:
     samples_per_direction: 100
     temperature: 0.0                # null = do not send
     max_tokens: 300
-    requests_per_minute: 20         # check your provider's CURRENT free-tier limit
+    requests_per_minute: 12         # check your provider's CURRENT free-tier limit
     max_retries: 4
     timeout_s: 60
     prompt_version: v1
